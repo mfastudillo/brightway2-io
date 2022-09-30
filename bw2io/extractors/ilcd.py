@@ -14,8 +14,7 @@ xpaths_process = {
     "reference_year": "/processDataSet/processInformation/time/common:referenceYear/text()",
     "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
     "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
-    "reference_to_reference_flow": "/processDataSet/exchanges/exchange[@dataSetInternalID=/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow]",
-    
+    "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
     # Xpath for values in process XML file, will return multiple values as a list
     "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
     "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
