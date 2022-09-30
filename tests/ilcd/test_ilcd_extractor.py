@@ -65,12 +65,23 @@ def test_apply_xpaths_to_xml_file():
 
 def test_extract_all_relevant_info():
     v = extract_all_relevant_info(example_file)
-    print(v["flows"])
-    pass
+    assert "processes" in v
+    assert len(v["processes"]) == 1
+    assert "flows" in v
+    assert len(v["flows"]) == 1240
+    expected_first_flow = {
+        "basename": "Spoil (deposited)",
+        "uuid": "fa1d0ee9-d657-4d0b-9ee4-7a0f5f46d462",
+        "category": None,
+        "type": "Waste flow",
+        "value": "1.0",
+        "refobj": "93a60a56-a3c8-11da-a746-0800200b9a66",
+    }
+    assert v["flows"][0] == expected_first_flow
 
 
 if __name__ == "__main__":
-    # test_extract_zip()
-    # test_xml_value_getter()
+    test_extract_zip()
+    test_xml_value_getter()
     test_apply_xpaths_to_xml_file()
     test_extract_all_relevant_info()
