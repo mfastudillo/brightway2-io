@@ -93,3 +93,4 @@ if __name__ == "__main__":
     test_xml_value_getter()
     test_apply_xpaths_to_xml_file()
     test_extract_all_relevant_info()
+    test_lookup_flowproperty()
