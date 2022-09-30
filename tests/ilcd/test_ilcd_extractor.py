@@ -80,6 +80,14 @@ def test_extract_all_relevant_info():
     assert v["flows"][0] == expected_first_flow
 
 
+def test_lookup_flowproperty():
+    #print(lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[0])
+    assert(lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[0]=='MJ')
+    assert(lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200b9a66')[0]=='kg')
+    assert(lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[1]=='Net calorific value')
+    pass
+
+
 if __name__ == "__main__":
     test_extract_zip()
     test_xml_value_getter()
