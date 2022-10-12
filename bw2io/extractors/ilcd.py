@@ -66,6 +66,7 @@ def extract_zip(path: Union[Path, str] = None):
 
     if path is None:
         path = Path(__file__).parent.parent / "data" / "examples" / "ilcd_example.zip"
+
     with zipfile.ZipFile(path, mode="r") as archive:
         filelist = archive.filelist
 
@@ -262,8 +263,8 @@ def lookup_flowproperty(flowproperty_uuid):
     return fp_dict.get(flowproperty_uuid, (None, None))
 
 
-def extract(path_to_zip) -> dict:
-    """parse a zip file with the data of one activity. 
+def extract(path_to_zip) -> list:
+    """parse a zip file with the data of one activity.
 
     Args:
         path_to_zip (_type_): _description_
@@ -324,6 +325,11 @@ def extract(path_to_zip) -> dict:
     )
 
     activity_info["exchanges"] = exchanges.to_dict("records")
+
+    # TODO: prepare to parse list of activities, for the moment
+    # we simulate this returning a list with a single activity
+
+    activity_info = [activity_info]
 
     return activity_info
 
