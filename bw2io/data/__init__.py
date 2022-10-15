@@ -12,6 +12,7 @@ from openpyxl import load_workbook
 
 from ..compatibility import ECOSPOLD_2_3_BIOSPHERE, SIMAPRO_BIOSPHERE
 from ..units import normalize_units
+import pandas as pd
 
 dirpath = Path(__file__).parent.resolve()
 
@@ -195,6 +196,12 @@ def get_us_lci_migration_data():
 def get_exiobase_biosphere_migration_data():
     """Migrate to ecoinvent3 flow names"""
     return json.load(open(dirpath / "exiomigration.json", encoding="utf-8"))
+
+def get_ilcd_biosphere_migration_data():
+
+    ilcd_ecoinvent_df = pd.read_excel(dirpath/'Mapping_ES2ILCD.xlsx')
+
+    return ilcd_ecoinvent_df.set_index('ILCD_ID').ecoinvent_id.to_dict()
 
 
 def convert_simapro_ecoinvent_elementary_flows():

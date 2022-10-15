@@ -59,3 +59,13 @@ def convert_to_default_units(data:list):
                 e['amount'] *= unit_conversion_dict[e['unit']]['multiplier']
 
     return data
+
+def map_to_biosphere3(data:list):
+    
+    ilcd_ecoinvent_id_dict = bw2io.data.get_ilcd_biosphere_migration_data()
+
+    for ds in data:
+        for e in ds.get('exchanges'):
+            e['input'] = ('biosphere3',ilcd_ecoinvent_id_dict.get(e.get('uuid')))
+
+    return data
