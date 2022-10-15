@@ -1,4 +1,6 @@
 
+import bw2io
+
 def rename_activity_keys(data:list):
     """renames the keys of the activity dict"""
 
@@ -31,5 +33,29 @@ def get_activity_unit(data:list):
         for exchange in ds['exchanges']:
             if exchange.get('exchanges_internal_id') == ds['reference_to_reference_flow']:
                 ds['unit'] = exchange['unit']
+
+    return data
+
+def convert_to_default_units(data:list):
+    """convert to default units"""
+
+    migration_units = bw2io.units.get_default_units_migration_data()
+    unit_conversion_dict = {unit[0]:d for unit,d in migration_units['data']}
+
+    for ds in data:
+
+        ds['unit'] = bw2io.units.normalize_units(ds['unit'])
+
+        if ds['unit'] in unit_conversion_dict:
+            ds['unit'] = unit_conversion_dict[ds['unit']]['unit']
+            ds['amount'] *= unit_conversion_dict[ds['unit']]['multiplier']
+            
+        for e in ds['exchanges']:
+
+            e['unit'] = bw2io.units.normalize_units(e['unit'])
+
+            if e['unit'] in unit_conversion_dict:
+                e['unit'] = unit_conversion_dict[e['unit']]['unit']
+                e['amount'] *= unit_conversion_dict[e['unit']]['multiplier']
 
     return data
