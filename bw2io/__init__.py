@@ -6,6 +6,7 @@ __all__ = [
     "add_ecoinvent_36_biosphere_flows",
     "add_ecoinvent_37_biosphere_flows",
     "add_ecoinvent_38_biosphere_flows",
+    "add_ecoinvent_39_biosphere_flows",
     "add_example_database",
     "backup_data_directory",
     "backup_project_directory",
@@ -67,6 +68,7 @@ from .data import (
     add_ecoinvent_36_biosphere_flows,
     add_ecoinvent_37_biosphere_flows,
     add_ecoinvent_38_biosphere_flows,
+    add_ecoinvent_39_biosphere_flows,
     add_example_database,
     get_csv_example_filepath,
     get_xlsx_example_filepath,
@@ -108,14 +110,32 @@ def create_default_biosphere3(overwrite=False):
     eb.write_database(overwrite=overwrite)
 
 
-def create_default_lcia_methods(overwrite=False, rationalize_method_names=False):
-    from .importers import EcoinventLCIAImporter
+def create_default_lcia_methods(overwrite=False, rationalize_method_names=False, shortcut=True):
+    if shortcut:
+        import zipfile
+        import json
+        from pathlib import Path
+        from .importers.base_lcia import LCIAImporter
 
-    ei = EcoinventLCIAImporter()
-    if rationalize_method_names:
-        ei.add_rationalize_method_names_strategy()
-    ei.apply_strategies()
-    ei.write_methods(overwrite=overwrite)
+        fp = Path(__file__).parent.resolve() / "data" / "lcia" / "lcia_39_ecoinvent.zip"
+
+        with zipfile.ZipFile(fp, mode="r") as archive:
+            data = json.load(archive.open("data.json"))
+
+        for method in data:
+            method['name'] = tuple(method['name'])
+
+        ei = LCIAImporter("lcia_39_ecoinvent.zip")
+        ei.data = data
+        ei.write_methods(overwrite=overwrite)
+    else:
+        from .importers import EcoinventLCIAImporter
+
+        ei = EcoinventLCIAImporter()
+        if rationalize_method_names:
+            ei.add_rationalize_method_names_strategy()
+        ei.apply_strategies()
+        ei.write_methods(overwrite=overwrite)
 
 
 def bw2setup():
