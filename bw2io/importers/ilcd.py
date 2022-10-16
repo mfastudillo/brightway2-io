@@ -22,3 +22,13 @@ class ILCDImporter(LCIImporter):
             map_to_biosphere3,
 
         ]
+
+        # not sure if it should be done here...
+        for ds in self.data:
+            ds['database'] = dbname
+            ds['code'] = ds['uuid']
+            ds['type']='process'
+
+            for e in ds.get('exchanges'):
+                if e['type']=='production':
+                    e['input'] = (ds['database'],ds['code'])
