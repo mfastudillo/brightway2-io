@@ -66,13 +66,13 @@ def map_to_biosphere3(data:list):
 
     for ds in data:
         for e in ds.get('exchanges'):
-            try:
-                e['database'] = 'biosphere3'
-                e['code'] = ilcd_ecoinvent_id_dict[e.get('uuid')]
-                #e['input'] = ('biosphere3',ilcd_ecoinvent_id_dict[e.get('uuid')])
-            except KeyError:
-                # this is going to be unlinked
-                continue
-
+            if e['type'] =='biosphere':
+                try:
+                    e['database'] = 'biosphere3'
+                    e['code'] = ilcd_ecoinvent_id_dict[e.get('uuid')]
+                    #e['input'] = ('biosphere3',ilcd_ecoinvent_id_dict[e.get('uuid')])
+                except KeyError:
+                    # this is going to be unlinked
+                    continue
 
     return data
