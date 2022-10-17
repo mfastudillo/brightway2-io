@@ -61,7 +61,8 @@ def convert_to_default_units(data:list):
     return data
 
 def map_to_biosphere3(data:list):
-    
+    """use the mapping file to define code and database of 
+    biosphere flows"""
     ilcd_ecoinvent_id_dict = bw2io.data.get_ilcd_biosphere_migration_data()
 
     for ds in data:

@@ -9,6 +9,7 @@ from bw2io.extractors.ilcd import (
 )
 
 from bw2io.importers.ilcd import ILCDImporter
+from bw2io.units import normalize_units
 from pathlib import Path
 from lxml.etree import _Element
 import pytest
@@ -27,12 +28,33 @@ def example_path():
 
     return example_file_path
 
-def test_importer():
+def test_examplepath(example_path):
 
-    so = ILCDImporter(example_file,'example_ilcd')
+    assert example_path.is_file(),example_path
+
+def test_importer(example_path):
+    """test that importer and strategies are working as expected"""
+    so = ILCDImporter(example_path,'example_ilcd')
     so.apply_strategies()
 
-    assert type(so.data) is list
+    assert type(so.data) is list,'wrong data type'
+
+    for ds in so.data:
+
+        assert isinstance(ds,dict),'wrong data type'
+        assert 'database' in ds
+        assert 'code' in ds
+        assert 'name' in ds
+
+        for e in ds.get('exchanges'):
+
+            assert 'name' in e,e
+            assert 'type' in e,e
+            assert 'unit' in e,e
+
+            assert normalize_units(e['unit']) == e['unit'],f'no default units {e['unit']}'
+
+
 
 def test_extract_zip():
 
