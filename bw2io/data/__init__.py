@@ -198,10 +198,14 @@ def get_exiobase_biosphere_migration_data():
     return json.load(open(dirpath / "exiomigration.json", encoding="utf-8"))
 
 def get_ilcd_biosphere_migration_data():
+    
+    with open(dirpath/'ILCD-EFv3.0-ecoinventEFv3.7.json') as f:
+        ilcd_ecoinvent_dict = json.load(f)
 
-    ilcd_ecoinvent_df = pd.read_excel(dirpath/'Mapping_ES2ILCD.xlsx')
-
-    return ilcd_ecoinvent_df.set_index('ILCD_ID').ecoinvent_id.to_dict()
+    #ilcd_ecoinvent_df = pd.read_excel(dirpath/'Mapping_ES2ILCD.xlsx')
+    #ilcd_ecoinvent_df.set_index('ILCD_ID').ecoinvent_id.to_dict()
+    
+    return ilcd_ecoinvent_dict
 
 
 def convert_simapro_ecoinvent_elementary_flows():
