@@ -30,5 +30,7 @@ class ILCDImporter(LCIImporter):
             ds['type']='process'
 
             for e in ds.get('exchanges'):
-                if e['type']=='production':
-                    e['input'] = (ds['database'],ds['code'])
+                if e['type']=='Product flow':
+                    e['database'] = ds['database']
+                    e['code'] = ds['code']
+                    #e['input'] = (ds['database'],ds['code'])
