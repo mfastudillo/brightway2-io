@@ -7,7 +7,9 @@ def rename_activity_keys(data:list):
     renaming_act_dict = {'basename':'name'}
     renaming_exchanges_dict = {'basename':'name',
     'Elementary flow':'biosphere',
-    'Product flow':'production','Waste flow':'technosphere'}
+    'Product flow':'production',
+    'Waste flow':'technosphere',
+    'Other flow': 'technosphere',}# ¿?
 
     for ds in data:
         
