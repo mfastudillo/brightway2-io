@@ -12,8 +12,10 @@ xpaths_process = {
     "mix_and_location_types": "/processDataSet/processInformation/dataSetInformation/name/mixAndLocationTypes/text()",
     "functional_unit_flow_properties": "/processDataSet/processInformation/dataSetInformation/name/functionalUnitFlowProperties/text()",
     "uuid": "/processDataSet/processInformation/dataSetInformation/common:UUID/text()",
+    "general_comment":"/processDataSet/processInformation/dataSetInformation/common:generalComment/text()",
     "reference_year": "/processDataSet/processInformation/time/common:referenceYear/text()",
     "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
+    "time_representativeness_description": "/processDataSet/processInformation/time/common:timeRepresentativenessDescription/text()",
     "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
     "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
     # Xpath for values in process XML file, will return multiple values as a list
@@ -28,6 +30,8 @@ xpaths_process = {
 xpaths_flows = {
     "basename": "/flowDataSet/flowInformation/dataSetInformation/name/baseName/text()",
     "uuid": "/flowDataSet/flowInformation/dataSetInformation/common:UUID/text()",
+    "category_0": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=0]/text()",
+    "category_1": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=1]/text()",
     "category": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
     "type": "/flowDataSet/modellingAndValidation/LCIMethod/typeOfDataSet/text()",
     "value": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/meanValue/text()",
