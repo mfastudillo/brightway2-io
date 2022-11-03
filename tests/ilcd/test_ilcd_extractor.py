@@ -52,7 +52,7 @@ def test_importer(example_path):
             assert 'type' in e,e
             assert 'unit' in e,e
 
-            assert normalize_units(e['unit']) == e['unit'],f'no default units {e['unit']}'
+            assert normalize_units(e['unit']) == e['unit'],f"no default units {e['unit']}"
 
 
 
