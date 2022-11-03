@@ -46,7 +46,15 @@ namespaces = {
 }
 
 
-def extract_zip(path: Union[Path, str] = None):
+def extract_zip(path: Union[Path, str] = None)-> dict:
+    """
+
+    Args:
+        path (Union[Path, str], optional): _description_. Defaults to None.
+
+    Returns:
+        dict: _description_
+    """
     # ILCD should be read in a particular order
     sort_order = {
         "contacts": 0,
@@ -68,20 +76,24 @@ def extract_zip(path: Union[Path, str] = None):
         # "processes",
     ]
 
-    if path is None:
-        path = Path(__file__).parent.parent / "data" / "examples" / "ilcd_example.zip"
+    # if path is None:
+    #     path = Path(__file__).parent.parent / "data" / "examples" / "ilcd_example.zip"
 
     with zipfile.ZipFile(path, mode="r") as archive:
         filelist = archive.filelist
 
+        # filter dirs, only files, sometimes there is empty folders there
+        filelist = [f for f in filelist if f.is_dir() == False]
+
         # remove folders that we do not need
         filelist = [
-            file for file in filelist if Path(file.filename).parts[1] not in to_ignore
-        ]
+        file for file in filelist if Path(file.filename).parts[1] not in to_ignore
+         ]
 
-        # sort by folder
+
+        # sort by folder (a default key for folders that go at the end wo order)
         filelist = sorted(
-            filelist, key=lambda x: sort_order.get(Path(x.filename).parts[1])
+            filelist, key=lambda x: sort_order.get(Path(x.filename).parts[1],99)
         )
 
         trees = {}
@@ -95,7 +107,7 @@ def extract_zip(path: Union[Path, str] = None):
     return trees
 
 
-def extract_all_relevant_info(file_path):
+def extract_all_relevant_info(file_path)-> dict:
     trees = extract_zip(file_path)
     file_types = ["processes", "flows"]
     results = {}
@@ -112,7 +124,16 @@ def extract_all_relevant_info(file_path):
     return results
 
 
-def apply_xpaths_to_xml_file(xpath_dict, xml_tree):
+def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
+    """_summary_
+
+    Args:
+        xpath_dict (dict): _description_
+        xml_tree (_type_): _description_
+
+    Returns:
+        dict: _description_
+    """
     results = {}
     for k in xpath_dict:
         default_ns = (
@@ -154,7 +175,15 @@ def get_xml_value(xml_tree, xpath_str, default_ns, namespaces):
 # looks up the name and unit of a flow property by its UUID
 # to get the unit: lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[0]
 # to get the name of the flowproperty: lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[1]
-def lookup_flowproperty(flowproperty_uuid):
+def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
+    """_summary_
+
+    Args:
+        flowproperty_uuid (str): _description_
+
+    Returns:
+        tuple: _description_
+    """
     fp_dict = {
         "93a60a56-a3c8-19da-a746-0800200c9a66": ("m2", "Area"),
         "93a60a56-a3c8-21da-a746-0800200c9a66": ("m2*a", "Area*time"),
@@ -290,12 +319,15 @@ def extract(path_to_zip) -> list:
 
     # separate exchanges
     exchange_dict = {}
+    activity_info = {}
     for key, value in activity.items():
 
         if key.startswith("exchanges"):
             exchange_dict[key] = value
+        else:
+            activity_info[key] = value
 
-    activity_info = {k: v for k, v in activity.items() if not k.startswith("exchanges")}
+    #activity_info = {k: v for k, v in activity.items() if not k.startswith("exchanges")}
 
     df_exchages = pd.DataFrame(exchange_dict)
 
@@ -339,6 +371,14 @@ def extract(path_to_zip) -> list:
 
 
 class ILCDExtractor(object):
+    """_summary_
+
+    Args:
+        object (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     @classmethod
     def _extract(cls, path):
 
