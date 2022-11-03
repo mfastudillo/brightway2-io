@@ -1,6 +1,28 @@
 
 import bw2io
 
+def setdb_and_code(data:list,dbname:str):
+
+    # not sure if it should be done here...
+    for ds in data:
+        ds['database'] = dbname
+        ds['code'] = ds['uuid']
+        ds['type']='process'
+
+        # technosphere flows are assigned by default the dbname and code
+        for e in ds.get('exchanges'):
+            if e['type']=='Product flow':
+                e['database'] = ds['database']
+                e['code'] = ds['uuid']
+
+
+                if e['exchanges_internal_id'] == ds['reference_to_reference_flow']:
+                    # production flow
+                    continue
+
+    return data
+
+
 def rename_activity_keys(data:list):
     """renames the keys of the activity dict"""
 
