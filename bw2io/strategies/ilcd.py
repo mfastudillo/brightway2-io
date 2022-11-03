@@ -7,7 +7,7 @@ def rename_activity_keys(data:list):
     renaming_act_dict = {'basename':'name'}
     renaming_exchanges_dict = {'basename':'name',
     'Elementary flow':'biosphere',
-    'Product flow':'production',
+    'Product flow':'technosphere',
     'Waste flow':'technosphere',
     'Other flow': 'technosphere',}# ¿?
 
@@ -36,6 +36,26 @@ def get_activity_unit(data:list):
             if exchange.get('exchanges_internal_id') == ds['reference_to_reference_flow']:
                 ds['unit'] = exchange['unit']
 
+    return data
+
+def set_default_location(data:list):
+
+    for ds in data:
+
+        ds['location'] = ds.get('location','GLO')
+
+        if ds['location'] is None:
+            ds['location']='GLO'
+
+    return data
+
+def set_production_exchange(data:list):
+
+    for ds in data:
+        for exchange in ds['exchanges']:
+            if exchange.get('exchanges_internal_id') == ds['reference_to_reference_flow']:
+
+                exchange['type'] = 'production' 
     return data
 
 def convert_to_default_units(data:list):
@@ -73,7 +93,7 @@ def map_to_biosphere3(data:list):
                 try:
                     e['database'] = 'biosphere3'
                     e['code'] = ilcd_ecoinvent_id_dict[e.get('uuid')]
-                    #e['input'] = ('biosphere3',ilcd_ecoinvent_id_dict[e.get('uuid')])
+
                 except KeyError:
                     # this is going to be unlinked
                     continue
