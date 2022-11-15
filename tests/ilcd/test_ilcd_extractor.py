@@ -16,7 +16,7 @@ import pytest
 
 example_file = (
     Path(__file__).absolute().parent.parent.parent
-    / "bw2io/data/examples/ilcd-example.zip"
+    / "bw2io/data/examples/ilcd_example.zip"
 )
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def example_path():
 
     example_file_path = (
     Path(__file__).absolute().parent.parent.parent
-    / "bw2io/data/examples/ilcd-example.zip")
+    / "bw2io/data/examples/ilcd_example.zip")
 
     return example_file_path
 
@@ -81,7 +81,7 @@ def test_xml_value_getter():
         namespaces["default_process_ns"],
         namespaces["others"],
     )
-    assert v == 'Toluene diisocyanate (TDI)'
+    assert v == 'Light duty vehicle',v
 
 # values of the previous example
 # def test_apply_xpaths_to_xml_file():
