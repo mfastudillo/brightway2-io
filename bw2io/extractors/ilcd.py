@@ -32,7 +32,7 @@ xpaths_flows = {
     "uuid": "/flowDataSet/flowInformation/dataSetInformation/common:UUID/text()",
     "category_0": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=0]/text()",
     "category_1": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=1]/text()",
-    "category": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
+    "category_2": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
     "type": "/flowDataSet/modellingAndValidation/LCIMethod/typeOfDataSet/text()",
     "value": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/meanValue/text()",
     "refobj": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/referenceToFlowPropertyDataSet/@refObjectId",
@@ -76,9 +76,6 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
         # "processes",
     ]
 
-    # if path is None:
-    #     path = Path(__file__).parent.parent / "data" / "examples" / "ilcd_example.zip"
-
     with zipfile.ZipFile(path, mode="r") as archive:
         filelist = archive.filelist
 
@@ -107,7 +104,17 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
     return trees
 
 
-def extract_all_relevant_info(file_path)-> dict:
+def extract_all_relevant_info(file_path: Union[Path, str])-> dict:
+    """extracts all the relevant info from a zip file containing a lci in ilcd 
+    format
+
+    Args:
+        file_path (Union[Path, str]): path to the file bein extracted
+
+    Returns:
+        dict: contains relevant info
+    """
+
     trees = extract_zip(file_path)
     file_types = ["processes", "flows"]
     results = {}
@@ -115,12 +122,14 @@ def extract_all_relevant_info(file_path)-> dict:
         results[ft] = []
         for exc_f in trees[ft]:
             tree_object = trees[ft][exc_f]
+
             if ft == "processes":
                 results[ft].append(
                     apply_xpaths_to_xml_file(xpaths_process, tree_object)
                 )
-            if ft == "flows":
+            elif ft == "flows":
                 results[ft].append(apply_xpaths_to_xml_file(xpaths_flows, tree_object))
+
     return results
 
 
@@ -147,7 +156,8 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
     return results
 
 
-def get_xml_value(xml_tree, xpath_str, default_ns, namespaces):
+def get_xml_value(xml_tree, xpath_str, default_ns, namespaces)-> dict:
+
     assert len(default_ns) == 1, "The general namespace is not clearly defined."
     namespaces.update(default_ns)
 
@@ -172,9 +182,6 @@ def get_xml_value(xml_tree, xpath_str, default_ns, namespaces):
     return r
 
 
-# looks up the name and unit of a flow property by its UUID
-# to get the unit: lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[0]
-# to get the name of the flowproperty: lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[1]
 def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
     """_summary_
 
@@ -182,7 +189,7 @@ def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
         flowproperty_uuid (str): _description_
 
     Returns:
-        tuple: _description_
+        tuple: vonysind the unit and flow property of a given flow given its uuid
     """
     fp_dict = {
         "93a60a56-a3c8-19da-a746-0800200c9a66": ("m2", "Area"),
@@ -308,7 +315,7 @@ def extract(path_to_zip) -> list:
 
     etrees_dict = extract_zip(path_to_zip)
 
-    # activity data and first part of exchanges
+    # get activity data and first part of exchanges
     default_ns = namespaces["default_process_ns"]
     ns = namespaces["others"]
     ns.update(default_ns)
@@ -327,7 +334,7 @@ def extract(path_to_zip) -> list:
         else:
             activity_info[key] = value
 
-    #activity_info = {k: v for k, v in activity.items() if not k.startswith("exchanges")}
+    # this merging could be also done without pandas 
 
     df_exchages = pd.DataFrame(exchange_dict)
 
@@ -381,7 +388,8 @@ class ILCDExtractor(object):
     """
     @classmethod
     def _extract(cls, path):
-
+        
+        assert Path(path).exists(),"path to file does not seem to exist"
         data = extract(path)
 
         return data
