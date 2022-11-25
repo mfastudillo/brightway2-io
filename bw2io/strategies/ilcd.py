@@ -1,5 +1,6 @@
 
 import bw2io
+from itertools import zip_longest
 
 def setdb_and_code(data:list,dbname:str):
 
@@ -60,6 +61,29 @@ def get_activity_unit(data:list):
 
     return data
 
+def set_activity_parameters(data:list):
+    """adds the activity parameters as a list dicts
+
+    Args:
+        data (list): _description_
+    """
+    for ds in data:
+        
+        params = [ds['parameter_name'],ds['parameter_comment'],
+        ds['parameter_formula'],ds['parameter_mean_value'],
+        ds['parameter_minimum_value'],ds['parameter_maximum_value'],
+        ds['parameter_std95'],]
+
+        params_reorganised = []
+        for name,comment,formula,mean,minimum,maximum,std, in zip_longest(*params):
+            d = {'name':name,'comment':comment,'formula':formula,'mean':mean,
+            'minimum':minimum,'maximum':maximum,'std':std,    
+            }
+            params_reorganised.append(d)
+        ds['parameters'] = params_reorganised
+
+    return data
+    
 def set_default_location(data:list):
 
     for ds in data:
