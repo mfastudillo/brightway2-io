@@ -20,7 +20,12 @@ xpaths_process = {
     "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
     # Xpath for values in process XML file, will return multiple values as a list
     "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter/@name",
-    "parameter_meanvalue":"/processDataSet/processInformation/mathematicalRelations/variableParameter/meanValue/text()",
+    "parameter_comment":"/processDataSet/processInformation/mathematicalRelations/variableParameter/comment/text()",
+    "parameter_mean_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/meanValue/text()",
+    "parameter_minimum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/minimumValue/text()",
+    "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/maximumValue/text()",
+    "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter/relativeStandardDeviation95In/text()",
+    "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter/formula/text()",
     "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
     "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
     "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
