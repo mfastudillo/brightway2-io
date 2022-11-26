@@ -74,13 +74,16 @@ def set_activity_parameters(data:list):
         ds['parameter_minimum_value'],ds['parameter_maximum_value'],
         ds['parameter_std95'],]
 
-        params_reorganised = []
-        for name,comment,formula,mean,minimum,maximum,std, in zip_longest(*params):
-            d = {'name':name,'comment':comment,'formula':formula,'mean':mean,
-            'minimum':minimum,'maximum':maximum,'std':std,    
-            }
-            params_reorganised.append(d)
-        ds['parameters'] = params_reorganised
+        has_params = any(([p is not None for p in params]))
+
+        if has_params:
+            params_reorganised = []
+            for name,comment,formula,mean,minimum,maximum,std, in zip_longest(*params):
+                d = {'name':name,'comment':comment,'formula':formula,'mean':mean,
+                'minimum':minimum,'maximum':maximum,'std':std,    
+                }
+                params_reorganised.append(d)
+            ds['parameters'] = params_reorganised
 
     return data
     
