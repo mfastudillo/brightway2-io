@@ -45,11 +45,18 @@ xpaths_flows = {
     "refobj": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/referenceToFlowPropertyDataSet/@refObjectId",
 }
 
+xpath_contacts = {
+    'email':"/contactDataSet/contactInformation/dataSetInformation/email/text()",
+    'website':"/contactDataSet/contactInformation/dataSetInformation/WWWAddress/text()",
+    'short_name':"/contactDataSet/contactInformation/dataSetInformation/common:shortName/text()",
+}
+
 # Namespaces to use with the XPath
 namespaces = {
     "default_process_ns": {"pns": "http://lca.jrc.it/ILCD/Process"},
     "default_flow_ns": {"fns": "http://lca.jrc.it/ILCD/Flow"},
     "others": {"common": "http://lca.jrc.it/ILCD/Common"},
+    'default_contact_ns': {"contact":"http://lca.jrc.it/ILCD/Contact"},
 }
 
 
@@ -75,7 +82,7 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
 
     # for the moment we ignore some of the folders
     to_ignore = [
-        "contacts",
+        #"contacts",
         "sources",
         "unitgroups",
         "flowproperties",
@@ -123,7 +130,7 @@ def extract_all_relevant_info(file_path: Union[Path, str])-> dict:
     """
 
     trees = extract_zip(file_path)
-    file_types = ["processes", "flows"]
+    file_types = ["contacts","processes", "flows"]
     results = {}
     for ft in file_types:
         results[ft] = []
@@ -136,6 +143,8 @@ def extract_all_relevant_info(file_path: Union[Path, str])-> dict:
                 )
             elif ft == "flows":
                 results[ft].append(apply_xpaths_to_xml_file(xpaths_flows, tree_object))
+            elif ft == 'contacts':
+                results[ft].append(apply_xpaths_to_xml_file(xpath_contacts,tree_object))
 
     return results
 
@@ -150,13 +159,28 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
     Returns:
         dict: _description_
     """
+    # this needs to be modified to be able to pick something different than 
+    # flowDataset
+
     results = {}
+    hint = list(xpath_dict.items())[0][1].split('/')[1]
+
+    selec_namespace = {
+    'contactDataSet':namespaces['default_contact_ns'],
+    'flowDataSet':namespaces["default_flow_ns"],
+    'processDataSet':namespaces["default_process_ns"],
+    }
+
+    default_ns = selec_namespace[hint]
+
     for k in xpath_dict:
-        default_ns = (
-            namespaces["default_process_ns"]
-            if "flowDataSet" not in list(xpath_dict.items())[0][1]
-            else namespaces["default_flow_ns"]
-        )
+
+        # # pick the right namespace
+        # default_ns = (
+        #     namespaces["default_process_ns"]
+        #     if "flowDataSet" not in list(xpath_dict.items())[0][1]
+        #     else namespaces["default_flow_ns"]
+        # )
         results[k] = get_xml_value(
             xml_tree, xpath_dict[k], default_ns, namespaces["others"]
         )
@@ -322,6 +346,12 @@ def extract(path_to_zip) -> list:
 
     etrees_dict = extract_zip(path_to_zip)
 
+    # get contanct data
+    contact_list = []
+    for _,etree in etrees_dict.get('contacts').items():
+        contacts = apply_xpaths_to_xml_file(xpath_contacts,etree)
+        contact_list.append(contacts)
+
     # get activity data and first part of exchanges
     default_ns = namespaces["default_process_ns"]
     ns = namespaces["others"]
@@ -375,6 +405,7 @@ def extract(path_to_zip) -> list:
     )
 
     activity_info["exchanges"] = exchanges.to_dict("records")
+    activity_info["contacts"] = contact_list
 
     # TODO: prepare to parse list of activities, for the moment
     # we simulate this returning a list with a single activity
