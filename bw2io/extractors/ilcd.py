@@ -220,7 +220,7 @@ def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
         flowproperty_uuid (str): _description_
 
     Returns:
-        tuple: vonysind the unit and flow property of a given flow given its uuid
+        tuple: the unit and flow property of a given flow given its uuid
     """
     fp_dict = {
         "93a60a56-a3c8-19da-a746-0800200c9a66": ("m2", "Area"),
@@ -347,72 +347,45 @@ def extract(path_to_zip) -> list:
     etrees_dict = extract_zip(path_to_zip)
 
     # get contanct data
-    contact_list = []
-    for _,etree in etrees_dict.get('contacts').items():
-        contacts = apply_xpaths_to_xml_file(xpath_contacts,etree)
-        contact_list.append(contacts)
-
-    # get activity data and first part of exchanges
-    default_ns = namespaces["default_process_ns"]
-    ns = namespaces["others"]
-    ns.update(default_ns)
-
-    for path, etree in etrees_dict["processes"].items():
-
-        activity = apply_xpaths_to_xml_file(xpaths_process, etree)
-
-    # separate exchanges
-    exchange_dict = {}
-    activity_info = {}
-    for key, value in activity.items():
-
-        if key.startswith("exchanges"):
-            exchange_dict[key] = value
-        else:
-            activity_info[key] = value
-
-    # this merging could be also done without pandas 
-
-    df_exchages = pd.DataFrame(exchange_dict)
-
+    contact_list = get_contact_from_etree(etrees_dict)
+    
     # extract more info on flows
-    default_ns = namespaces["default_flow_ns"]
-    ns = namespaces["others"]
-    ns.update(default_ns)
-
-    flow_list = []
-    for path, etree in etrees_dict["flows"].items():
-
-        thing = apply_xpaths_to_xml_file(xpaths_flows, etree)
-        flow_list.append(thing)
-
+    flow_list = get_flows_from_etree(etrees_dict)
     flow_df = pd.DataFrame(flow_list)
 
-    exchanges = flow_df.merge(
-        df_exchages, left_on="uuid", right_on="exchanges_uuid", how="inner"
-    ).drop("exchanges_uuid", axis=1)
+    # get activity data and first part of exchanges
+    activity_list = get_activity_from_etree(etrees_dict)
+    
+    activity_info_list = []
+    for activity_info,exchange_dict in activity_list:
+        # this merging could be also done without pandas 
 
-    exchanges["amount"] = exchanges["exchanges_amount"].map(float) * exchanges[
-        "value"
-    ].map(float)
-    exchanges = exchanges.drop(["value", "exchanges_amount"], axis=1)
+        df_exchages = pd.DataFrame(exchange_dict)
 
-    # add unit and flow property from lookup
-    exchanges[["unit", "flow property"]] = pd.DataFrame(
-        exchanges.refobj.map(lookup_flowproperty).to_list(),
-        index=exchanges.index,
-        columns=["unit", "flow property"],
-    )
+        exchanges = flow_df.merge(
+            df_exchages, left_on="uuid", right_on="exchanges_uuid", how="inner"
+        ).drop("exchanges_uuid", axis=1)
 
-    activity_info["exchanges"] = exchanges.to_dict("records")
-    activity_info["contacts"] = contact_list
+        exchanges["amount"] = exchanges["exchanges_amount"].map(float) * exchanges[
+            "value"
+        ].map(float)
 
-    # TODO: prepare to parse list of activities, for the moment
-    # we simulate this returning a list with a single activity
+        exchanges = exchanges.drop(["value", "exchanges_amount"], axis=1)
 
-    activity_info = [activity_info]
+        # add unit and flow property from lookup
+        exchanges[["unit", "flow property"]] = pd.DataFrame(
+            exchanges.refobj.map(lookup_flowproperty).to_list(),
+            index=exchanges.index,
+            columns=["unit", "flow property"],
+        )
 
-    return activity_info
+        activity_info["exchanges"] = exchanges.to_dict("records")
+        activity_info["contacts"] = contact_list
+
+
+        activity_info_list.append(activity_info)
+
+    return activity_info_list
 
 
 class ILCDExtractor(object):
@@ -431,3 +404,54 @@ class ILCDExtractor(object):
         data = extract(path)
 
         return data
+
+
+def get_contact_from_etree(etree_dict:dict):
+    contact_list = []
+    for _,etree in etree_dict.get('contacts').items():
+        contacts = apply_xpaths_to_xml_file(xpath_contacts,etree)
+        contact_list.append(contacts)
+
+    return contact_list
+
+
+def get_activity_from_etree(etrees_dict:dict)->list:
+
+    
+    default_ns = namespaces["default_process_ns"]
+    ns = namespaces["others"]
+    ns.update(default_ns)
+
+    activity_list = []
+    for path, etree in etrees_dict["processes"].items():
+
+        activity = apply_xpaths_to_xml_file(xpaths_process, etree)
+
+        # separate exchanges
+        exchange_dict = {}
+        activity_info = {}
+        for key, value in activity.items():
+
+            if key.startswith("exchanges"):
+                exchange_dict[key] = value
+            else:
+                activity_info[key] = value
+
+        activity_list.append((activity_info,exchange_dict))
+        
+
+    return activity_list
+    
+def get_flows_from_etree(etrees_dict):
+
+    default_ns = namespaces["default_flow_ns"]
+    ns = namespaces["others"]
+    ns.update(default_ns)
+
+    flow_list = []
+    for path, etree in etrees_dict["flows"].items():
+
+        thing = apply_xpaths_to_xml_file(xpaths_flows, etree)
+        flow_list.append(thing)
+
+    return flow_list
