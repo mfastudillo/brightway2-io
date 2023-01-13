@@ -1,14 +1,24 @@
 
 import bw2io
 from itertools import zip_longest
+import pandas as pd
 
-def setdb_and_code(data:list,dbname:str):
+def setdb_and_code(data:list,dbname:str)->list:
+    """
+
+    Args:
+        data (list): _description_
+        dbname (str): _description_
+
+    Returns:
+        list: _description_
+    """
 
     # not sure if it should be done here...
     for ds in data:
         ds['database'] = dbname
+        ds['type']='process' 
         ds['code'] = ds['uuid']
-        ds['type']='process'
 
         # technosphere flows are assigned by default the dbname and code
         for e in ds.get('exchanges'):
@@ -25,7 +35,7 @@ def setdb_and_code(data:list,dbname:str):
 
 
 def rename_activity_keys(data:list):
-    """renames the keys of the activity dict"""
+    """renames the 'name' and exchange 'type' keys (e.g Elementary flow to biosphere)"""
 
     renaming_act_dict = {'basename':'name'}
     renaming_exchanges_dict = {'basename':'name',
@@ -51,8 +61,10 @@ def rename_activity_keys(data:list):
 
 
 def get_activity_unit(data:list):
-    """in ilcd the unit is in the reference product, that should be identified
-    with an internal reference code."""
+    """Sets the unit of the activities"""
+
+    # in ilcd the unit is in the reference product, that should be identified 
+    # with an internal reference code.
     
     for ds in data:
         for exchange in ds['exchanges']:
@@ -98,7 +110,8 @@ def set_default_location(data:list):
 
     return data
 
-def set_production_exchange(data:list):
+def set_production_exchange(data:list)->list:
+    """changes the exchange type to 'production' for the reference flow"""
 
     for ds in data:
         for exchange in ds['exchanges']:
@@ -132,16 +145,46 @@ def convert_to_default_units(data:list):
     return data
 
 def map_to_biosphere3(data:list):
-    """use the mapping file to define code and database of 
-    biosphere flows"""
+    """sets the code and database of biosphere flows tryng to link to the
+    biosphere3 database. It uses a mapping between ilcd elementary flows and
+    ecoinvent elementary flows."""
     ilcd_ecoinvent_id_dict = bw2io.data.get_ilcd_biosphere_migration_data()
 
     for ds in data:
         for e in ds.get('exchanges'):
             if e['type'] =='biosphere':
                 try:
-                    e['database'] = 'biosphere3'
                     e['code'] = ilcd_ecoinvent_id_dict[e.get('uuid')]
+                    e['database'] = 'biosphere3'
+
+                except KeyError:
+                    # this is going to be unlinked
+                    continue
+
+    return data
+
+
+def alternative_map_to_biosphere3(data:list,mapping_path:str):
+    """sets the code and database of biosphere flows using an alternative mapping.
+
+    Args:
+        data (list): _description_
+        mapping_path (str): path to an excel file with SourceFlowUUID and 
+        TargetFlowUUID as columns
+
+    Returns:
+        _type_: _description_
+    """
+
+    mapping_df = pd.read_excel(mapping_path)
+    mapping_dict = mapping_df.set_index('SourceFlowUUID')['TargetFlowUUID'].dropna().to_dict()
+
+    for ds in data:
+        for e in ds.get('exchanges'):
+            if e['type'] =='biosphere':
+                try:
+                    e['code'] = mapping_dict[e.get('uuid')]
+                    e['database'] = 'biosphere3'
 
                 except KeyError:
                     # this is going to be unlinked
