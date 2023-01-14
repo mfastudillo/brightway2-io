@@ -20,16 +20,16 @@ def setdb_and_code(data:list,dbname:str)->list:
         ds['type']='process' 
         ds['code'] = ds['uuid']
 
-        # technosphere flows are assigned by default the dbname and code
-        for e in ds.get('exchanges'):
-            if e['type']=='Product flow':
-                e['database'] = ds['database']
-                e['code'] = ds['uuid']
+        # # technosphere flows are assigned by default the dbname and code
+        # for e in ds.get('exchanges'):
+        #     if e['type']=='Product flow':
+        #         e['database'] = ds['database']
+        #         e['code'] = ds['uuid']
 
 
-                if e['exchanges_internal_id'] == ds['reference_to_reference_flow']:
-                    # production flow
-                    continue
+        #         if e['exchanges_internal_id'] == ds['reference_to_reference_flow']:
+        #             # production flow
+        #             continue
 
     return data
 
@@ -111,13 +111,16 @@ def set_default_location(data:list):
     return data
 
 def set_production_exchange(data:list)->list:
-    """changes the exchange type to 'production' for the reference flow"""
+    """changes the exchange type to 'production' for the reference flow, and sets
+    the code and database"""
 
     for ds in data:
         for exchange in ds['exchanges']:
             if exchange.get('exchanges_internal_id') == ds['reference_to_reference_flow']:
 
                 exchange['type'] = 'production' 
+                exchange['database'] = ds['database']
+                exchange['code'] = ds['code']
     return data
 
 def convert_to_default_units(data:list):
@@ -191,3 +194,15 @@ def alternative_map_to_biosphere3(data:list,mapping_path:str):
                     continue
 
     return data
+
+# def set_production_code_and_database(data:list):
+
+#     for act in data:
+
+#         for e in act['exchanges']:
+
+#             if e['type']=='production':
+#                 e['database'] = act['database']
+#                 e['code'] = act['code']
+
+#     return data
