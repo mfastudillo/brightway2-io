@@ -70,7 +70,7 @@ def get_activity_unit(data:list):
         for exchange in ds['exchanges']:
             if exchange.get('exchanges_internal_id') == ds['reference_to_reference_flow']:
                 ds['unit'] = exchange['unit']
-
+                ds['exchanges_name'] = exchange['exchanges_name']
     return data
 
 def set_activity_parameters(data:list):
