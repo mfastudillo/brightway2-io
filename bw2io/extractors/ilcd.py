@@ -351,7 +351,9 @@ def extract(path_to_zip) -> list:
     
     # extract more info on flows
     flow_list = get_flows_from_etree(etrees_dict)
+
     flow_df = pd.DataFrame(flow_list)
+
 
     # get activity data and first part of exchanges
     activity_list = get_activity_from_etree(etrees_dict)
@@ -359,8 +361,12 @@ def extract(path_to_zip) -> list:
     activity_info_list = []
     for activity_info,exchange_dict in activity_list:
         # this merging could be also done without pandas 
-
-        df_exchages = pd.DataFrame(exchange_dict)
+        try:
+            df_exchages = pd.DataFrame(exchange_dict)
+        except ValueError as ve:
+            # if it is only one
+            df_exchages = pd.Series(exchange_dict,name=0).to_frame().T
+            assert len(df_exchages) == 1,'we may be under the wrong assumption'
 
         exchanges = flow_df.merge(
             df_exchages, left_on="uuid", right_on="exchanges_uuid", how="inner"
