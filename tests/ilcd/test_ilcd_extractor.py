@@ -1,33 +1,17 @@
-from bw2io.extractors.ilcd import (
-    extract_zip,
-    get_xml_value,
-    extract_all_relevant_info,
-    apply_xpaths_to_xml_file,
-    xpaths,namespaces_dict,get_contact_from_etree,get_flows_from_etree
-
-)
-
-from bw2io.importers.ilcd import ILCDImporter
-from bw2io.units import normalize_units
 from pathlib import Path
-from lxml.etree import _Element
-import pytest
 
-# example_file = (
-#     Path(__file__).absolute().parent.parent.parent
-#     / "bw2io/data/examples/ilcd_example.zip"
-# )
+import pytest
+from ilcd_fixtures import example_path
+from lxml.etree import _Element
+
+from bw2io.extractors.ilcd import (apply_xpaths_to_xml_file,
+                                   extract_all_relevant_info, extract_zip,
+                                   get_contact_from_etree,
+                                   get_flows_from_etree, get_xml_value,
+                                   namespaces_dict, xpaths)
+
 
 # fixtures
-@pytest.fixture
-def example_path():
-
-    example_file_path = (
-    Path(__file__).absolute().parent.parent.parent
-    / "bw2io/data/examples/ilcd_example.zip")
-
-    return example_file_path
-
 @pytest.fixture
 def example_tree(example_path):
 
@@ -41,6 +25,7 @@ def test_examplepath(example_path):
 
 def test_get_contact_from_etree(example_tree):
     """tests the function getting a contact list from the tree"""
+
     contacts = get_contact_from_etree(example_tree)
     assert isinstance(contacts,list)
     contact_1,*rest = contacts
@@ -50,6 +35,7 @@ def test_get_contact_from_etree(example_tree):
     assert 'short_name' in contact_1
 
 def test_get_flows_from_etree(example_tree):
+    
     """test that get_flows_from_etree gets the right keys
 
     Args:
@@ -65,34 +51,6 @@ def test_get_flows_from_etree(example_tree):
 
     for key in expeted_keys:
         assert key in one_flow
-
-def test_importer(example_path):
-    """test that importer and strategies are working as expected"""
-    so = ILCDImporter(example_path,'example_ilcd')
-    so.apply_strategies()
-
-    assert type(so.data) is list,'wrong data type'
-
-    for ds in so.data:
-
-        assert isinstance(ds,dict),'wrong data type'
-
-        assert 'database' in ds
-        assert 'code' in ds
-        assert 'name' in ds
-        assert 'uuid' in ds
-        assert 'general_comment' in ds
-        assert 'location' in ds
-        assert 'unit' in ds
-        assert 'parameter_formula' in ds
-
-        for e in ds.get('exchanges'):
-
-            assert 'name' in e,e
-            assert 'type' in e,e
-            assert 'unit' in e,e
-
-            assert normalize_units(e['unit']) == e['unit'],f"no default units {e['unit']}"
 
 
 
@@ -111,7 +69,6 @@ def test_extract_zip(example_path):
         )
 
 
-
 def test_xml_value_getter(example_path):
 
     xpaths_dict = xpaths()
@@ -128,47 +85,3 @@ def test_xml_value_getter(example_path):
         namespaces["others"],
     )
     assert v == 'Light duty vehicle',v
-
-# values of the previous example
-# def test_apply_xpaths_to_xml_file():
-#     trees = extract_zip(example_file)
-#     tree_object = trees["processes"][list(trees["processes"])[0]]
-#     v = apply_xpaths_to_xml_file(xpaths_process, tree_object)
-#     v_expected = {
-#         "basename": "Aromatic Polyester Polyols (APP) production mix",
-#         "treatment_standards_routes": "polycondensation",
-#         "mix_and_location_types": "production mix, at producer",
-#         "functional_unit_flow_properties": "Hydroxyl value: 150-360 mg KOH/g, aromatic content: 5-50%; Average gross calorific value 22.5 MJ/kg",
-#         "uuid": "d2fe899e-7fc0-49d3-a7cc-bbf8cad5439a",
-#         "reference_year": "2019",
-#         "data_set_valid_until": "2026",
-#         "location": "EU-28",
-#         "reference_to_reference_flow": None,
-#     }
-#     # do not compare exchanges because too much data
-#     assert all(v_expected[k] == v[k] for k in v_expected)
-
-
-# def test_extract_all_relevant_info():
-#     v = extract_all_relevant_info(example_file)
-#     assert "processes" in v
-#     assert len(v["processes"]) == 1
-#     assert "flows" in v
-#     assert len(v["flows"]) == 1240
-#     expected_first_flow = {
-#         "basename": "Spoil (deposited)",
-#         "uuid": "fa1d0ee9-d657-4d0b-9ee4-7a0f5f46d462",
-#         "category": None,
-#         "type": "Waste flow",
-#         "value": "1.0",
-#         "refobj": "93a60a56-a3c8-11da-a746-0800200b9a66",
-#     }
-#     assert v["flows"][0] == expected_first_flow
-
-
-if __name__ == "__main__":
-    test_extract_zip()
-    test_xml_value_getter()
-    test_apply_xpaths_to_xml_file()
-    test_extract_all_relevant_info()
-    test_lookup_flowproperty()
