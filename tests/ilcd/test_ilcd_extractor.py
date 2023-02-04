@@ -2,10 +2,8 @@ from bw2io.extractors.ilcd import (
     extract_zip,
     get_xml_value,
     extract_all_relevant_info,
-    xpaths_process,
-    xpaths_flows,
-    namespaces,
     apply_xpaths_to_xml_file,
+    xpaths,namespaces_dict
 )
 
 from bw2io.importers.ilcd import ILCDImporter
@@ -14,11 +12,12 @@ from pathlib import Path
 from lxml.etree import _Element
 import pytest
 
-example_file = (
-    Path(__file__).absolute().parent.parent.parent
-    / "bw2io/data/examples/ilcd_example.zip"
-)
+# example_file = (
+#     Path(__file__).absolute().parent.parent.parent
+#     / "bw2io/data/examples/ilcd_example.zip"
+# )
 
+# fixture 
 @pytest.fixture
 def example_path():
 
@@ -42,9 +41,15 @@ def test_importer(example_path):
     for ds in so.data:
 
         assert isinstance(ds,dict),'wrong data type'
+
         assert 'database' in ds
         assert 'code' in ds
         assert 'name' in ds
+        assert 'uuid' in ds
+        assert 'general_comment' in ds
+        assert 'location' in ds
+        assert 'unit' in ds
+        assert 'parameter_formula' in ds
 
         for e in ds.get('exchanges'):
 
@@ -56,11 +61,13 @@ def test_importer(example_path):
 
 
 
-def test_extract_zip():
+def test_extract_zip(example_path):
 
-    trees = extract_zip(example_file)
+    trees = extract_zip(example_path)
     # assure completeness
-    assert len(trees) == 2
+    assert 'contacts' in trees
+    assert 'flows' in trees
+    assert 'processes' in trees
 
     # assure that all return values are etrees
     for branches in trees:
@@ -68,11 +75,15 @@ def test_extract_zip():
             [isinstance(trees[branches][t], _Element) for t in trees[branches]]
         )
 
-    return trees
 
 
-def test_xml_value_getter():
-    trees = extract_zip(example_file)
+def test_xml_value_getter(example_path):
+
+    xpaths_dict = xpaths()
+    xpaths_process = xpaths_dict['xpaths_process']
+    namespaces = namespaces_dict()
+
+    trees = extract_zip(example_path)
     tree_object = trees["processes"][list(trees["processes"])[0]]
     xpath_str = xpaths_process["basename"]
     v = get_xml_value(
