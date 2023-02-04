@@ -463,7 +463,7 @@ def get_activity_from_etree(etrees_dict:dict)->list:
 
     return activity_list
     
-def get_flows_from_etree(etrees_dict):
+def get_flows_from_etree(etrees_dict:dict)->list:
     namespaces = namespaces_dict()
     default_ns = namespaces["default_flow_ns"]
     ns = namespaces["others"]
