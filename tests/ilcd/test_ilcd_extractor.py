@@ -3,7 +3,8 @@ from bw2io.extractors.ilcd import (
     get_xml_value,
     extract_all_relevant_info,
     apply_xpaths_to_xml_file,
-    xpaths,namespaces_dict
+    xpaths,namespaces_dict,get_contact_from_etree,get_flows_from_etree
+
 )
 
 from bw2io.importers.ilcd import ILCDImporter
@@ -17,7 +18,7 @@ import pytest
 #     / "bw2io/data/examples/ilcd_example.zip"
 # )
 
-# fixture 
+# fixtures
 @pytest.fixture
 def example_path():
 
@@ -27,9 +28,43 @@ def example_path():
 
     return example_file_path
 
+@pytest.fixture
+def example_tree(example_path):
+
+    etrees_dict = extract_zip(example_path)
+    return etrees_dict
+
+## tests
 def test_examplepath(example_path):
 
     assert example_path.is_file(),example_path
+
+def test_get_contact_from_etree(example_tree):
+    """tests the function getting a contact list from the tree"""
+    contacts = get_contact_from_etree(example_tree)
+    assert isinstance(contacts,list)
+    contact_1,*rest = contacts
+
+    assert 'email' in contact_1
+    assert 'website' in contact_1
+    assert 'short_name' in contact_1
+
+def test_get_flows_from_etree(example_tree):
+    """test that get_flows_from_etree gets the right keys
+
+    Args:
+        example_tree (_type_): _description_
+    """
+    xpaths_dicts = xpaths()
+    flows = get_flows_from_etree(example_tree)
+    assert isinstance(flows,list)
+    assert len(flows) > 0
+
+    one_flow = flows[0]
+    expeted_keys = xpaths_dicts['xpaths_flows'].keys()
+
+    for key in expeted_keys:
+        assert key in one_flow
 
 def test_importer(example_path):
     """test that importer and strategies are working as expected"""
@@ -129,14 +164,6 @@ def test_xml_value_getter(example_path):
 #         "refobj": "93a60a56-a3c8-11da-a746-0800200b9a66",
 #     }
 #     assert v["flows"][0] == expected_first_flow
-
-
-# def test_lookup_flowproperty():
-#     #print(lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[0])
-#     assert(lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[0]=='MJ')
-#     assert(lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200b9a66')[0]=='kg')
-#     assert(lookup_flowproperty('93a60a56-a3c8-11da-a746-0800200c9a66')[1]=='Net calorific value')
-#     pass
 
 
 if __name__ == "__main__":
