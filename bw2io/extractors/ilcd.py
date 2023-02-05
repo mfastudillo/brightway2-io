@@ -8,6 +8,7 @@ from lxml import etree
 def xpaths():
     # Xpath for values in process XML file will return one value in a list
     xpaths_process = {
+        # process information
         "basename": "/processDataSet/processInformation/dataSetInformation/name/baseName/text()",
         "treatment_standards_routes": "/processDataSet/processInformation/dataSetInformation/name/treatmentStandardsRoutes/text()",
         "mix_and_location_types": "/processDataSet/processInformation/dataSetInformation/name/mixAndLocationTypes/text()",
@@ -27,6 +28,11 @@ def xpaths():
         "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/maximumValue/text()",
         "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter/relativeStandardDeviation95In/text()",
         "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter/formula/text()",
+        # administrative info
+        'intended_application':"/processDataSet/administrativeInformation/common:commissionerAndGoal/common:intendedApplications/text()",
+        'dataset_format':"/processDataSet/administrativeInformation/dataEntryBy/common:referenceToDataSetFormat/common:shortDescription/text()",
+        "licensetype":"/processDataSet/administrativeInformation/publicationAndOwnership/common:licenseType/text()",
+        # exchanges
         "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
         "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
         "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
