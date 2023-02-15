@@ -167,7 +167,7 @@ def map_to_biosphere3(data:list):
     return data
 
 
-def alternative_map_to_biosphere3(data:list,mapping_path:str):
+def alternative_map_to_biosphere3(data:list,mapping_dict:dict)->list:
     """sets the code and database of biosphere flows using an alternative mapping.
 
     Args:
@@ -178,9 +178,6 @@ def alternative_map_to_biosphere3(data:list,mapping_path:str):
     Returns:
         _type_: _description_
     """
-
-    mapping_df = pd.read_excel(mapping_path)
-    mapping_dict = mapping_df.set_index('SourceFlowUUID')['TargetFlowUUID'].dropna().to_dict()
 
     for ds in data:
         for e in ds.get('exchanges'):
