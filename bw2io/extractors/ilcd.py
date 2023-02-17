@@ -5,60 +5,75 @@ import pandas as pd
 
 from lxml import etree
 
-# Xpath for values in process XML file will return one value in a list
-xpaths_process = {
-    "basename": "/processDataSet/processInformation/dataSetInformation/name/baseName/text()",
-    "treatment_standards_routes": "/processDataSet/processInformation/dataSetInformation/name/treatmentStandardsRoutes/text()",
-    "mix_and_location_types": "/processDataSet/processInformation/dataSetInformation/name/mixAndLocationTypes/text()",
-    "functional_unit_flow_properties": "/processDataSet/processInformation/dataSetInformation/name/functionalUnitFlowProperties/text()",
-    "uuid": "/processDataSet/processInformation/dataSetInformation/common:UUID/text()",
-    "general_comment":"/processDataSet/processInformation/dataSetInformation/common:generalComment/text()",
-    "reference_year": "/processDataSet/processInformation/time/common:referenceYear/text()",
-    "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
-    "time_representativeness_description": "/processDataSet/processInformation/time/common:timeRepresentativenessDescription/text()",
-    "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
-    "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
-    # Xpath for values in process XML file, will return multiple values as a list
-    "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter/@name",
-    "parameter_comment":"/processDataSet/processInformation/mathematicalRelations/variableParameter/comment/text()",
-    "parameter_mean_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/meanValue/text()",
-    "parameter_minimum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/minimumValue/text()",
-    "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/maximumValue/text()",
-    "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter/relativeStandardDeviation95In/text()",
-    "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter/formula/text()",
-    "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
-    "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
-    "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
-    "exchanges_direction": "/processDataSet/exchanges/exchange/exchangeDirection/text()",
-    "exchanges_amount": "/processDataSet/exchanges/exchange/resultingAmount/text()",
-}
+def xpaths():
+    # Xpath for values in process XML file will return one value in a list
+    xpaths_process = {
+        # process information
+        "basename": "/processDataSet/processInformation/dataSetInformation/name/baseName/text()",
+        "treatment_standards_routes": "/processDataSet/processInformation/dataSetInformation/name/treatmentStandardsRoutes/text()",
+        "mix_and_location_types": "/processDataSet/processInformation/dataSetInformation/name/mixAndLocationTypes/text()",
+        "functional_unit_flow_properties": "/processDataSet/processInformation/dataSetInformation/name/functionalUnitFlowProperties/text()",
+        "uuid": "/processDataSet/processInformation/dataSetInformation/common:UUID/text()",
+        "general_comment":"/processDataSet/processInformation/dataSetInformation/common:generalComment/text()",
+        "reference_year": "/processDataSet/processInformation/time/common:referenceYear/text()",
+        "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
+        "time_representativeness_description": "/processDataSet/processInformation/time/common:timeRepresentativenessDescription/text()",
+        "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
+        "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
+        # Xpath for values in process XML file, will return multiple values as a list
+        "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter/@name",
+        "parameter_comment":"/processDataSet/processInformation/mathematicalRelations/variableParameter/comment/text()",
+        "parameter_mean_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/meanValue/text()",
+        "parameter_minimum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/minimumValue/text()",
+        "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/maximumValue/text()",
+        "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter/relativeStandardDeviation95In/text()",
+        "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter/formula/text()",
+        # administrative info
+        'intended_application':"/processDataSet/administrativeInformation/common:commissionerAndGoal/common:intendedApplications/text()",
+        'dataset_format':"/processDataSet/administrativeInformation/dataEntryBy/common:referenceToDataSetFormat/common:shortDescription/text()",
+        "licensetype":"/processDataSet/administrativeInformation/publicationAndOwnership/common:licenseType/text()",
+        # exchanges
+        "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
+        "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
+        "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
+        "exchanges_direction": "/processDataSet/exchanges/exchange/exchangeDirection/text()",
+        "exchanges_amount": "/processDataSet/exchanges/exchange/resultingAmount/text()",
+    }
 
-# Xpath for values in flow XML files, will return one values in a list
-xpaths_flows = {
-    "basename": "/flowDataSet/flowInformation/dataSetInformation/name/baseName/text()",
-    "uuid": "/flowDataSet/flowInformation/dataSetInformation/common:UUID/text()",
-    "category_0": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=0]/text()",
-    "category_1": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=1]/text()",
-    "category_2": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
-    "type": "/flowDataSet/modellingAndValidation/LCIMethod/typeOfDataSet/text()",
-    "value": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/meanValue/text()",
-    "refobj": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/referenceToFlowPropertyDataSet/@refObjectId",
-}
+    # Xpath for values in flow XML files, will return one values in a list
+    xpaths_flows = {
+        "basename": "/flowDataSet/flowInformation/dataSetInformation/name/baseName/text()",
+        "uuid": "/flowDataSet/flowInformation/dataSetInformation/common:UUID/text()",
+        "category_0": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=0]/text()",
+        "category_1": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=1]/text()",
+        "category_2": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
+        "type": "/flowDataSet/modellingAndValidation/LCIMethod/typeOfDataSet/text()",
+        "value": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/meanValue/text()",
+        "refobj": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/referenceToFlowPropertyDataSet/@refObjectId",
+    }
 
-xpath_contacts = {
-    'email':"/contactDataSet/contactInformation/dataSetInformation/email/text()",
-    'website':"/contactDataSet/contactInformation/dataSetInformation/WWWAddress/text()",
-    'short_name':"/contactDataSet/contactInformation/dataSetInformation/common:shortName/text()",
-}
+    xpath_contacts = {
+        'email':"/contactDataSet/contactInformation/dataSetInformation/email/text()",
+        'website':"/contactDataSet/contactInformation/dataSetInformation/WWWAddress/text()",
+        'short_name':"/contactDataSet/contactInformation/dataSetInformation/common:shortName/text()",
+    }
 
-# Namespaces to use with the XPath
-namespaces = {
-    "default_process_ns": {"pns": "http://lca.jrc.it/ILCD/Process"},
-    "default_flow_ns": {"fns": "http://lca.jrc.it/ILCD/Flow"},
-    "others": {"common": "http://lca.jrc.it/ILCD/Common"},
-    'default_contact_ns': {"contact":"http://lca.jrc.it/ILCD/Contact"},
-}
+    xpaths_dict = {'xpath_contacts':xpath_contacts,'xpaths_flows':xpaths_flows,
+    'xpaths_process':xpaths_process}
 
+    return xpaths_dict
+
+
+def namespaces_dict():
+    # Namespaces to use with the XPath
+    namespaces = {
+        "default_process_ns": {"pns": "http://lca.jrc.it/ILCD/Process"},
+        "default_flow_ns": {"fns": "http://lca.jrc.it/ILCD/Flow"},
+        "others": {"common": "http://lca.jrc.it/ILCD/Common"},
+        'default_contact_ns': {"contact":"http://lca.jrc.it/ILCD/Contact"},
+    }
+
+    return namespaces
 
 def extract_zip(path: Union[Path, str] = None)-> dict:
     """
@@ -128,6 +143,10 @@ def extract_all_relevant_info(file_path: Union[Path, str])-> dict:
     Returns:
         dict: contains relevant info
     """
+    xpaths_dict = xpaths()
+    xpaths_process = xpaths_dict['xpaths_process']
+    xpaths_flows = xpaths_dict['xpaths_flows']
+    xpath_contacts = xpaths_dict['xpath_contacts']
 
     trees = extract_zip(file_path)
     file_types = ["contacts","processes", "flows"]
@@ -159,6 +178,7 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
     Returns:
         dict: _description_
     """
+    namespaces = namespaces_dict()
     # this needs to be modified to be able to pick something different than 
     # flowDataset
 
@@ -175,12 +195,6 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
 
     for k in xpath_dict:
 
-        # # pick the right namespace
-        # default_ns = (
-        #     namespaces["default_process_ns"]
-        #     if "flowDataSet" not in list(xpath_dict.items())[0][1]
-        #     else namespaces["default_flow_ns"]
-        # )
         results[k] = get_xml_value(
             xml_tree, xpath_dict[k], default_ns, namespaces["others"]
         )
@@ -220,7 +234,7 @@ def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
         flowproperty_uuid (str): _description_
 
     Returns:
-        tuple: vonysind the unit and flow property of a given flow given its uuid
+        tuple: the unit and flow property of a given flow given its uuid
     """
     fp_dict = {
         "93a60a56-a3c8-19da-a746-0800200c9a66": ("m2", "Area"),
@@ -347,72 +361,51 @@ def extract(path_to_zip) -> list:
     etrees_dict = extract_zip(path_to_zip)
 
     # get contanct data
-    contact_list = []
-    for _,etree in etrees_dict.get('contacts').items():
-        contacts = apply_xpaths_to_xml_file(xpath_contacts,etree)
-        contact_list.append(contacts)
-
-    # get activity data and first part of exchanges
-    default_ns = namespaces["default_process_ns"]
-    ns = namespaces["others"]
-    ns.update(default_ns)
-
-    for path, etree in etrees_dict["processes"].items():
-
-        activity = apply_xpaths_to_xml_file(xpaths_process, etree)
-
-    # separate exchanges
-    exchange_dict = {}
-    activity_info = {}
-    for key, value in activity.items():
-
-        if key.startswith("exchanges"):
-            exchange_dict[key] = value
-        else:
-            activity_info[key] = value
-
-    # this merging could be also done without pandas 
-
-    df_exchages = pd.DataFrame(exchange_dict)
-
+    contact_list = get_contact_from_etree(etrees_dict)
+    
     # extract more info on flows
-    default_ns = namespaces["default_flow_ns"]
-    ns = namespaces["others"]
-    ns.update(default_ns)
-
-    flow_list = []
-    for path, etree in etrees_dict["flows"].items():
-
-        thing = apply_xpaths_to_xml_file(xpaths_flows, etree)
-        flow_list.append(thing)
+    flow_list = get_flows_from_etree(etrees_dict)
 
     flow_df = pd.DataFrame(flow_list)
 
-    exchanges = flow_df.merge(
-        df_exchages, left_on="uuid", right_on="exchanges_uuid", how="inner"
-    ).drop("exchanges_uuid", axis=1)
 
-    exchanges["amount"] = exchanges["exchanges_amount"].map(float) * exchanges[
-        "value"
-    ].map(float)
-    exchanges = exchanges.drop(["value", "exchanges_amount"], axis=1)
+    # get activity data and first part of exchanges
+    activity_list = get_activity_from_etree(etrees_dict)
+    
+    activity_info_list = []
+    for activity_info,exchange_dict in activity_list:
+        # this merging could be also done without pandas 
+        try:
+            df_exchages = pd.DataFrame(exchange_dict)
+        except ValueError as ve:
+            # if it is only one
+            df_exchages = pd.Series(exchange_dict,name=0).to_frame().T
+            assert len(df_exchages) == 1,'we may be under the wrong assumption'
 
-    # add unit and flow property from lookup
-    exchanges[["unit", "flow property"]] = pd.DataFrame(
-        exchanges.refobj.map(lookup_flowproperty).to_list(),
-        index=exchanges.index,
-        columns=["unit", "flow property"],
-    )
+        exchanges = flow_df.merge(
+            df_exchages, left_on="uuid", right_on="exchanges_uuid", how="inner"
+        ).drop("exchanges_uuid", axis=1)
 
-    activity_info["exchanges"] = exchanges.to_dict("records")
-    activity_info["contacts"] = contact_list
+        exchanges["amount"] = exchanges["exchanges_amount"].map(float) * exchanges[
+            "value"
+        ].map(float)
 
-    # TODO: prepare to parse list of activities, for the moment
-    # we simulate this returning a list with a single activity
+        exchanges = exchanges.drop(["value", "exchanges_amount"], axis=1)
 
-    activity_info = [activity_info]
+        # add unit and flow property from lookup
+        exchanges[["unit", "flow property"]] = pd.DataFrame(
+            exchanges.refobj.map(lookup_flowproperty).to_list(),
+            index=exchanges.index,
+            columns=["unit", "flow property"],
+        )
 
-    return activity_info
+        activity_info["exchanges"] = exchanges.to_dict("records")
+        activity_info["contacts"] = contact_list
+
+
+        activity_info_list.append(activity_info)
+
+    return activity_info_list
 
 
 class ILCDExtractor(object):
@@ -431,3 +424,64 @@ class ILCDExtractor(object):
         data = extract(path)
 
         return data
+
+
+def get_contact_from_etree(etree_dict:dict):
+    contact_list = []
+
+    xpaths_dict = xpaths()
+    xpath_contacts = xpaths_dict['xpath_contacts']
+
+    for _,etree in etree_dict.get('contacts').items():
+        contacts = apply_xpaths_to_xml_file(xpath_contacts,etree)
+        contact_list.append(contacts)
+
+    return contact_list
+
+
+def get_activity_from_etree(etrees_dict:dict)->list:
+
+    xpaths_dict = xpaths()
+    xpaths_process = xpaths_dict['xpaths_process']
+
+    namespaces = namespaces_dict()
+    default_ns = namespaces["default_process_ns"]
+    ns = namespaces["others"]
+    ns.update(default_ns)
+
+    activity_list = []
+    for path, etree in etrees_dict["processes"].items():
+
+        activity = apply_xpaths_to_xml_file(xpaths_process, etree)
+
+        # separate exchanges
+        exchange_dict = {}
+        activity_info = {}
+        for key, value in activity.items():
+
+            if key.startswith("exchanges"):
+                exchange_dict[key] = value
+            else:
+                activity_info[key] = value
+
+        activity_list.append((activity_info,exchange_dict))
+        
+
+    return activity_list
+    
+def get_flows_from_etree(etrees_dict:dict)->list:
+    namespaces = namespaces_dict()
+    default_ns = namespaces["default_flow_ns"]
+    ns = namespaces["others"]
+    ns.update(default_ns)
+
+    xpaths_dict = xpaths()
+    xpaths_flows = xpaths_dict['xpaths_flows']
+
+    flow_list = []
+    for path, etree in etrees_dict["flows"].items():
+
+        thing = apply_xpaths_to_xml_file(xpaths_flows, etree)
+        flow_list.append(thing)
+
+    return flow_list
