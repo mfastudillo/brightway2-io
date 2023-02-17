@@ -42,14 +42,19 @@ def xpaths():
 
     # Xpath for values in flow XML files, will return one values in a list
     xpaths_flows = {
+        # flowinformation
         "basename": "/flowDataSet/flowInformation/dataSetInformation/name/baseName/text()",
         "uuid": "/flowDataSet/flowInformation/dataSetInformation/common:UUID/text()",
         "category_0": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=0]/text()",
         "category_1": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=1]/text()",
         "category_2": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
+        'CAS number':"/flowDataSet/flowInformation/dataSetInformation/CASNumber/text()",
+        # modelling and validation
         "type": "/flowDataSet/modellingAndValidation/LCIMethod/typeOfDataSet/text()",
         "value": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/meanValue/text()",
+        # flow properties
         "refobj": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/referenceToFlowPropertyDataSet/@refObjectId",
+        "flow property description":"/flowDataSet/flowProperties/flowProperty/referenceToFlowPropertyDataSet/common:shortDescription/text()",
     }
 
     xpath_contacts = {
@@ -231,11 +236,16 @@ def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
     """_summary_
 
     Args:
-        flowproperty_uuid (str): _description_
+        flowproperty_uuid (str): unique identifier of flow property
 
     Returns:
         tuple: the unit and flow property of a given flow given its uuid
     """
+    # TODO: this dictionary seems to be possible to construct looking into the
+    # flowproperties xml files for the uuid and name and .. somewhere else. 
+    # insane
+
+
     fp_dict = {
         "93a60a56-a3c8-19da-a746-0800200c9a66": ("m2", "Area"),
         "93a60a56-a3c8-21da-a746-0800200c9a66": ("m2*a", "Area*time"),
