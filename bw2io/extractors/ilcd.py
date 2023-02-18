@@ -19,6 +19,7 @@ def xpaths():
         "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
         "time_representativeness_description": "/processDataSet/processInformation/time/common:timeRepresentativenessDescription/text()",
         "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
+        "LatLong": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@latitudeAndLongitude",
         "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
         # Xpath for values in process XML file, will return multiple values as a list
         "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter/@name",
@@ -120,6 +121,11 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
         filelist = [
         file for file in filelist if Path(file.filename).parts[1] not in to_ignore
          ]
+
+        # remove non xml files
+        filelist = [
+        file for file in filelist if Path(file.filename).parts[1].endswith('xml')
+                ]
 
 
         # sort by folder (a default key for folders that go at the end wo order)
@@ -245,6 +251,8 @@ def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
     # flowproperties xml files for the uuid and name and .. somewhere else. 
     # insane
 
+    # TODO: the flow property seems to be extracted now, so we can use this only
+    # for the unit
 
     fp_dict = {
         "93a60a56-a3c8-19da-a746-0800200c9a66": ("m2", "Area"),
