@@ -86,6 +86,9 @@ def set_activity_parameters(data:list):
         ds['parameter_minimum_value'],ds['parameter_maximum_value'],
         ds['parameter_std95'],]
 
+        # force it to be a list of list in all cases
+        params = [alist if isinstance(alist,list) else [alist]for alist in params]
+
         has_params = any(([p is not None for p in params]))
 
         if has_params:
