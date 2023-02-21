@@ -70,7 +70,7 @@ def xpaths():
     return xpaths_dict
 
 
-def namespaces_dict():
+def namespaces_dict()-> dict:
     # Namespaces to use with the XPath
     namespaces = {
         "default_process_ns": {"pns": "http://lca.jrc.it/ILCD/Process"},
@@ -103,12 +103,10 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
 
     # for the moment we ignore some of the folders
     to_ignore = [
-        #"contacts",
         "sources",
         "unitgroups",
         "flowproperties",
         "external_docs",
-        # "processes",
     ]
 
     with zipfile.ZipFile(path, mode="r") as archive:
@@ -119,12 +117,12 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
 
         # remove folders that we do not need
         filelist = [
-        file for file in filelist if Path(file.filename).parts[1] not in to_ignore
+        file for file in filelist if Path(file.filename).parent.name not in to_ignore
          ]
 
         # remove non xml files
         filelist = [
-        file for file in filelist if Path(file.filename).parts[1].endswith('xml')
+        file for file in filelist if Path(file.filename).suffix == '.xml'
                 ]
 
 
