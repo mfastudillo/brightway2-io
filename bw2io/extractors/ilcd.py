@@ -19,6 +19,7 @@ def xpaths():
         "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
         "time_representativeness_description": "/processDataSet/processInformation/time/common:timeRepresentativenessDescription/text()",
         "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
+        "LatLong": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@latitudeAndLongitude",
         "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
         # Xpath for values in process XML file, will return multiple values as a list
         "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter/@name",
@@ -42,14 +43,19 @@ def xpaths():
 
     # Xpath for values in flow XML files, will return one values in a list
     xpaths_flows = {
+        # flowinformation
         "basename": "/flowDataSet/flowInformation/dataSetInformation/name/baseName/text()",
         "uuid": "/flowDataSet/flowInformation/dataSetInformation/common:UUID/text()",
         "category_0": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=0]/text()",
         "category_1": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=1]/text()",
         "category_2": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
+        'CAS number':"/flowDataSet/flowInformation/dataSetInformation/CASNumber/text()",
+        # modelling and validation
         "type": "/flowDataSet/modellingAndValidation/LCIMethod/typeOfDataSet/text()",
         "value": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/meanValue/text()",
+        # flow properties
         "refobj": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/referenceToFlowPropertyDataSet/@refObjectId",
+        "flow property description":"/flowDataSet/flowProperties/flowProperty/referenceToFlowPropertyDataSet/common:shortDescription/text()",
     }
 
     xpath_contacts = {
@@ -64,13 +70,14 @@ def xpaths():
     return xpaths_dict
 
 
-def namespaces_dict():
+def namespaces_dict()-> dict:
     # Namespaces to use with the XPath
     namespaces = {
         "default_process_ns": {"pns": "http://lca.jrc.it/ILCD/Process"},
         "default_flow_ns": {"fns": "http://lca.jrc.it/ILCD/Flow"},
         "others": {"common": "http://lca.jrc.it/ILCD/Common"},
         'default_contact_ns': {"contact":"http://lca.jrc.it/ILCD/Contact"},
+        "default_fp_ns":{'fpns':'http://lca.jrc.it/ILCD/FlowProperty'},
     }
 
     return namespaces
@@ -97,12 +104,10 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
 
     # for the moment we ignore some of the folders
     to_ignore = [
-        #"contacts",
         "sources",
         "unitgroups",
-        "flowproperties",
+#        "flowproperties",
         "external_docs",
-        # "processes",
     ]
 
     with zipfile.ZipFile(path, mode="r") as archive:
@@ -113,8 +118,13 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
 
         # remove folders that we do not need
         filelist = [
-        file for file in filelist if Path(file.filename).parts[1] not in to_ignore
+        file for file in filelist if Path(file.filename).parent.name not in to_ignore
          ]
+
+        # remove non xml files
+        filelist = [
+        file for file in filelist if Path(file.filename).suffix == '.xml'
+                ]
 
 
         # sort by folder (a default key for folders that go at the end wo order)
@@ -189,6 +199,7 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
     'contactDataSet':namespaces['default_contact_ns'],
     'flowDataSet':namespaces["default_flow_ns"],
     'processDataSet':namespaces["default_process_ns"],
+    "flowPropertyDataSet":namespaces["default_fp_ns"], # ?
     }
 
     default_ns = selec_namespace[hint]
@@ -231,11 +242,18 @@ def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
     """_summary_
 
     Args:
-        flowproperty_uuid (str): _description_
+        flowproperty_uuid (str): unique identifier of flow property
 
     Returns:
         tuple: the unit and flow property of a given flow given its uuid
     """
+    # TODO: this dictionary seems to be possible to construct looking into the
+    # flowproperties xml files for the uuid and name and .. somewhere else. 
+    # insane
+
+    # TODO: the flow property seems to be extracted now, so we can use this only
+    # for the unit
+
     fp_dict = {
         "93a60a56-a3c8-19da-a746-0800200c9a66": ("m2", "Area"),
         "93a60a56-a3c8-21da-a746-0800200c9a66": ("m2*a", "Area*time"),

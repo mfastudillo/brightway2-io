@@ -35,7 +35,8 @@ def setdb_and_code(data:list,dbname:str)->list:
 
 
 def rename_activity_keys(data:list):
-    """renames the 'name' and exchange 'type' keys (e.g Elementary flow to biosphere)"""
+    """renames the 'name' and exchange 'type' keys (e.g Elementary flow to 
+    biosphere)"""
 
     renaming_act_dict = {'basename':'name'}
     renaming_exchanges_dict = {'basename':'name',
@@ -85,6 +86,9 @@ def set_activity_parameters(data:list):
         ds['parameter_formula'],ds['parameter_mean_value'],
         ds['parameter_minimum_value'],ds['parameter_maximum_value'],
         ds['parameter_std95'],]
+
+        # force it to be a list of list in all cases
+        params = [alist if isinstance(alist,list) else [alist]for alist in params]
 
         has_params = any(([p is not None for p in params]))
 
