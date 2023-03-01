@@ -35,7 +35,8 @@ def setdb_and_code(data:list,dbname:str)->list:
 
 
 def rename_activity_keys(data:list):
-    """renames the 'name' and exchange 'type' keys (e.g Elementary flow to biosphere)"""
+    """renames the 'name' and exchange 'type' keys (e.g Elementary flow to 
+    biosphere)"""
 
     renaming_act_dict = {'basename':'name'}
     renaming_exchanges_dict = {'basename':'name',
