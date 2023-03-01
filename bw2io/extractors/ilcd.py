@@ -77,6 +77,7 @@ def namespaces_dict()-> dict:
         "default_flow_ns": {"fns": "http://lca.jrc.it/ILCD/Flow"},
         "others": {"common": "http://lca.jrc.it/ILCD/Common"},
         'default_contact_ns': {"contact":"http://lca.jrc.it/ILCD/Contact"},
+        "default_fp_ns":{'fpns':'http://lca.jrc.it/ILCD/FlowProperty'},
     }
 
     return namespaces
@@ -105,7 +106,7 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
     to_ignore = [
         "sources",
         "unitgroups",
-        "flowproperties",
+#        "flowproperties",
         "external_docs",
     ]
 
@@ -198,6 +199,7 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
     'contactDataSet':namespaces['default_contact_ns'],
     'flowDataSet':namespaces["default_flow_ns"],
     'processDataSet':namespaces["default_process_ns"],
+    "flowPropertyDataSet":namespaces["default_fp_ns"], # ?
     }
 
     default_ns = selec_namespace[hint]
