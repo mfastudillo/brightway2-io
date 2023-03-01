@@ -63,9 +63,11 @@ def xpaths():
         'website':"/contactDataSet/contactInformation/dataSetInformation/WWWAddress/text()",
         'short_name':"/contactDataSet/contactInformation/dataSetInformation/common:shortName/text()",
     }
-
+    xpath_flowproperties = {
+    'flow_property_name':'/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:name/text()',
+    }
     xpaths_dict = {'xpath_contacts':xpath_contacts,'xpaths_flows':xpaths_flows,
-    'xpaths_process':xpaths_process}
+    'xpaths_process':xpaths_process,'xpath_flowproperties':xpath_flowproperties,}
 
     return xpaths_dict
 
@@ -159,7 +161,7 @@ def extract_all_relevant_info(file_path: Union[Path, str])-> dict:
     xpath_contacts = xpaths_dict['xpath_contacts']
 
     trees = extract_zip(file_path)
-    file_types = ["contacts","processes", "flows"]
+    file_types = ["contacts","processes", "flows",'flowproperties']
     results = {}
     for ft in file_types:
         results[ft] = []
@@ -174,6 +176,8 @@ def extract_all_relevant_info(file_path: Union[Path, str])-> dict:
                 results[ft].append(apply_xpaths_to_xml_file(xpaths_flows, tree_object))
             elif ft == 'contacts':
                 results[ft].append(apply_xpaths_to_xml_file(xpath_contacts,tree_object))
+            elif ft == 'flowproperties':
+                results[ft].append(apply_xpaths_to_xml_file(xpaths_dict['xpath_flowproperties'],tree_object))
 
     return results
 
@@ -380,6 +384,9 @@ def extract(path_to_zip) -> list:
 
     # get contanct data
     contact_list = get_contact_from_etree(etrees_dict)
+
+    # get flow properties
+    flow_properties_list = get_flowproperties_from_etree(etrees_dict)
     
     # extract more info on flows
     flow_list = get_flows_from_etree(etrees_dict)
@@ -419,7 +426,7 @@ def extract(path_to_zip) -> list:
 
         activity_info["exchanges"] = exchanges.to_dict("records")
         activity_info["contacts"] = contact_list
-
+        activity_info["flow properties"] = flow_properties_list
 
         activity_info_list.append(activity_info)
 
@@ -503,3 +510,18 @@ def get_flows_from_etree(etrees_dict:dict)->list:
         flow_list.append(thing)
 
     return flow_list
+
+
+def get_flowproperties_from_etree(etree_dict:dict)->list:
+    fp_list = []
+
+    xpaths_dict = xpaths()
+    xpath_contacts = xpaths_dict['xpath_flowproperties']
+
+    for _,etree in etree_dict.get('flowproperties').items():
+        fp = apply_xpaths_to_xml_file(xpath_contacts,etree)
+
+        # TODO: modify so it returns a list when is just one element
+        fp_list.append(fp)
+
+    return fp_list
