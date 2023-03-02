@@ -5,7 +5,12 @@ import pandas as pd
 
 from lxml import etree
 
-def xpaths():
+def xpaths()-> dict:
+    """_summary_
+
+    Returns:
+        dict: xpaths related to the different folders
+    """
     # Xpath for values in process XML file will return one value in a list
     xpaths_process = {
         # process information
@@ -64,10 +69,18 @@ def xpaths():
         'short_name':"/contactDataSet/contactInformation/dataSetInformation/common:shortName/text()",
     }
     xpath_flowproperties = {
-    'flow_property_name':'/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:name/text()',
+    'flow_property_name':'/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:name/text()', # perhaps only the english one
+    'refObjectId':'/flowPropertyDataSet/flowPropertiesInformation/quantitativeReference/referenceToReferenceUnitGroup/@refObjectId'
     }
+
+    xpath_unitgroups = {
+    'ref_to_refunit':'/unitGroupDataSet/unitGroupInformation/quantitativeReference/referenceToReferenceUnit/text()',
+    'ug_uuid':'/unitGroupDataSet/unitGroupInformation/dataSetInformation/common:UUID/text()'
+    }
+
     xpaths_dict = {'xpath_contacts':xpath_contacts,'xpaths_flows':xpaths_flows,
-    'xpaths_process':xpaths_process,'xpath_flowproperties':xpath_flowproperties,}
+    'xpaths_process':xpaths_process,'xpath_flowproperties':xpath_flowproperties,
+    'xpaths_unitgroups':xpath_unitgroups}
 
     return xpaths_dict
 
@@ -80,6 +93,7 @@ def namespaces_dict()-> dict:
         "others": {"common": "http://lca.jrc.it/ILCD/Common"},
         'default_contact_ns': {"contact":"http://lca.jrc.it/ILCD/Contact"},
         "default_fp_ns":{'fpns':'http://lca.jrc.it/ILCD/FlowProperty'},
+        "default_unitgroup_ns":{'ugns':'http://lca.jrc.it/ILCD/UnitGroup'},
     }
 
     return namespaces
@@ -107,7 +121,7 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
     # for the moment we ignore some of the folders
     to_ignore = [
         "sources",
-        "unitgroups",
+#       "unitgroups",
 #        "flowproperties",
         "external_docs",
     ]
@@ -203,7 +217,8 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
     'contactDataSet':namespaces['default_contact_ns'],
     'flowDataSet':namespaces["default_flow_ns"],
     'processDataSet':namespaces["default_process_ns"],
-    "flowPropertyDataSet":namespaces["default_fp_ns"], # ?
+    "flowPropertyDataSet":namespaces["default_fp_ns"],
+    "unitGroupDataSet":namespaces['default_unitgroup_ns'],
     }
 
     default_ns = selec_namespace[hint]
