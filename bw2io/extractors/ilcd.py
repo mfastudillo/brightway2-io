@@ -69,13 +69,16 @@ def xpaths()-> dict:
         'short_name':"/contactDataSet/contactInformation/dataSetInformation/common:shortName/text()",
     }
     xpath_flowproperties = {
-    'flow_property_name':'/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:name/text()', # perhaps only the english one
-    'refObjectId':'/flowPropertyDataSet/flowPropertiesInformation/quantitativeReference/referenceToReferenceUnitGroup/@refObjectId'
+    'flow_property_name':"/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:name[@xml:lang='en']/text()", # only the english one
+    'refObjectId_unitgroup':'/flowPropertyDataSet/flowPropertiesInformation/quantitativeReference/referenceToReferenceUnitGroup/@refObjectId',
+    "refobjuuid":'/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:UUID/text()'
     }
 
     xpath_unitgroups = {
     'ref_to_refunit':'/unitGroupDataSet/unitGroupInformation/quantitativeReference/referenceToReferenceUnit/text()',
-    'ug_uuid':'/unitGroupDataSet/unitGroupInformation/dataSetInformation/common:UUID/text()'
+    'ug_uuid':'/unitGroupDataSet/unitGroupInformation/dataSetInformation/common:UUID/text()',
+    'unit_name':'/unitGroupDataSet/units/unit/name/text()',
+    'unit_amount':'/unitGroupDataSet/units/unit/meanValue/text()',
     }
 
     xpaths_dict = {'xpath_contacts':xpath_contacts,'xpaths_flows':xpaths_flows,
@@ -121,8 +124,6 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
     # for the moment we ignore some of the folders
     to_ignore = [
         "sources",
-#       "unitgroups",
-#        "flowproperties",
         "external_docs",
     ]
 
@@ -400,8 +401,16 @@ def extract(path_to_zip) -> list:
     # get contanct data
     contact_list = get_contact_from_etree(etrees_dict)
 
+    # get unit group data 
+    unit_gr_list = get_unitdata_from_etree(etree_dict=etrees_dict)
+    unit_gr_dict = reorganise_unit_group_data(unit_gr_list)
+
     # get flow properties
     flow_properties_list = get_flowproperties_from_etree(etrees_dict)
+    
+    # combine the flow property and unit data
+    unit_fp_dict = fp_dict(flow_properties=flow_properties_list, ug_dict=unit_gr_dict)
+    
     
     # extract more info on flows
     flow_list = get_flows_from_etree(etrees_dict)
@@ -433,16 +442,27 @@ def extract(path_to_zip) -> list:
         exchanges = exchanges.drop(["value", "exchanges_amount"], axis=1)
 
         # add unit and flow property from lookup
-        exchanges[["unit", "flow property"]] = pd.DataFrame(
+        unit_fp_df_v0 = pd.DataFrame(
             exchanges.refobj.map(lookup_flowproperty).to_list(),
             index=exchanges.index,
             columns=["unit", "flow property"],
         )
+        # new approach instead of lookup
+        unit_fp_df = pd.DataFrame(exchanges.refobj.map(unit_fp_dict).to_list(),
+        index=exchanges.index)
+
+        # validation, the new way is equivalent to lookup
+        comparison = unit_fp_df_v0.compare(unit_fp_df[unit_fp_df_v0.columns],
+        result_names=('v0','v1'),align_axis=0)
+        #assert len(comparison) == 0,comparison
+
+        exchanges[unit_fp_df.columns] = unit_fp_df
 
         activity_info["exchanges"] = exchanges.to_dict("records")
         activity_info["contacts"] = contact_list
         activity_info["flow properties"] = flow_properties_list
-
+        activity_info['_unit_group'] = unit_gr_dict
+        activity_info['_unit_flow_prop'] = unit_fp_dict # used later for unit conv
         activity_info_list.append(activity_info)
 
     return activity_info_list
@@ -465,8 +485,49 @@ class ILCDExtractor(object):
 
         return data
 
+def get_unitdata_from_etree(etree_dict:dict)->dict:
+    """extracts data from the unitgroups xml files
 
-def get_contact_from_etree(etree_dict:dict):
+    Args:
+        etree_dict (dict): _description_
+
+    Returns:
+        dict: refobj uuid as key and the name of the unit and multiplier factor
+        as values inside a dict
+    """
+    unit_list = []
+
+    xpaths_dict = xpaths()
+    xpaths_unitgr = xpaths_dict['xpaths_unitgroups']
+
+    for _,etree in etree_dict.get('unitgroups').items():
+
+        unit_gr = apply_xpaths_to_xml_file(xpaths_unitgr,etree)
+        unit_list.append(unit_gr)
+
+    return unit_list
+
+def reorganise_unit_group_data(unit_list):
+
+    ug_dict = {}
+    for ug in unit_list:
+    
+        unit_name = ug['unit_name'][int(ug['ref_to_refunit'])]
+        unit_amount = float(ug['unit_amount'][int(ug['ref_to_refunit'])])
+    
+        ug_dict[ug['ug_uuid']] = {'name':unit_name,'amount':unit_amount}
+
+    return ug_dict
+
+def get_contact_from_etree(etree_dict:dict)->list:
+    """extracts data from the 'contacts' folder
+
+    Args:
+        etree_dict (dict): _description_
+
+    Returns:
+        list: list of dicts with contact information
+    """
     contact_list = []
 
     xpaths_dict = xpaths()
@@ -480,6 +541,14 @@ def get_contact_from_etree(etree_dict:dict):
 
 
 def get_activity_from_etree(etrees_dict:dict)->list:
+    """extracts data from the 'processes' folder
+
+    Args:
+        etrees_dict (dict): _description_
+
+    Returns:
+        list: _description_
+    """
 
     xpaths_dict = xpaths()
     xpaths_process = xpaths_dict['xpaths_process']
@@ -528,6 +597,14 @@ def get_flows_from_etree(etrees_dict:dict)->list:
 
 
 def get_flowproperties_from_etree(etree_dict:dict)->list:
+    """extracts data from the 'flowproperties' folder
+
+    Args:
+        etree_dict (dict): _description_
+
+    Returns:
+        list: _description_
+    """
     fp_list = []
 
     xpaths_dict = xpaths()
@@ -540,3 +617,33 @@ def get_flowproperties_from_etree(etree_dict:dict)->list:
         fp_list.append(fp)
 
     return fp_list
+
+
+def fp_dict(flow_properties:list,ug_dict:dict):
+    """combines data from the unit group folder and the flow properties folder
+    to construct get the unit and the flow property of each exchange using as key
+    data from the ... exchanges? folder
+
+    Parameters
+    ----------
+    flow_properties : list
+        _description_
+    ug_dict : dict
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    fp_dict = {}
+    for fp in flow_properties:
+
+        d = {
+            'flow property':fp['flow_property_name'],
+            'unit':ug_dict[fp['refObjectId_unitgroup']]['name'],
+            'unit_multiplier':ug_dict[fp['refObjectId_unitgroup']]['amount'],
+            }
+        fp_dict[fp['refobjuuid']] = d
+    
+    return fp_dict
