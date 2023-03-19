@@ -2,6 +2,7 @@
 import bw2io
 from itertools import zip_longest
 import pandas as pd
+import logging
 
 def setdb_and_code(data:list,dbname:str)->list:
     """
@@ -128,26 +129,59 @@ def set_production_exchange(data:list)->list:
     return data
 
 def convert_to_default_units(data:list):
-    """convert to default units"""
+    """convert the data to the defaults units used in brightway. This means scaling
+    the values .. and probably the uncertainty 
+
+    Parameters
+    ----------
+    data : list
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
 
     migration_units = bw2io.units.get_default_units_migration_data()
     unit_conversion_dict = {unit[0]:d for unit,d in migration_units['data']}
+
+    default_units = {f['unit'] for f in unit_conversion_dict.values()}
+
+    # TODO get the default units in ilcd, then convert to them with the multiplier
+    # and to the default unit in brightway.
+    # https://eplca.jrc.ec.europa.eu/EF-node/unitgroupList.xhtml;jsessionid=C2A25849AC0F1C03FC8DDFED6AC62AA5?stock=default
+
 
     for ds in data:
 
         ds['unit'] = bw2io.units.normalize_units(ds['unit'])
 
-        if ds['unit'] in unit_conversion_dict:
+        if ds['unit'] in unit_conversion_dict and ds['unit'] not in default_units:
             ds['unit'] = unit_conversion_dict[ds['unit']]['unit']
-            ds['amount'] *= unit_conversion_dict[ds['unit']]['multiplier']
+            #TODO they do not have an amount it needs to be changed in the exchange list
+            #ds['amount'] *= unit_conversion_dict[ds['unit']]['multiplier']
+        else:
+            logging.warning(f"{ds['unit']} could not be converted")
             
         for e in ds['exchanges']:
 
             e['unit'] = bw2io.units.normalize_units(e['unit'])
 
-            if e['unit'] in unit_conversion_dict:
-                e['unit'] = unit_conversion_dict[e['unit']]['unit']
-                e['amount'] *= unit_conversion_dict[e['unit']]['multiplier']
+            if e['unit'] in default_units:
+                continue
+                # no need to scale
+
+            elif e['unit'] in unit_conversion_dict:
+                new_unit = unit_conversion_dict[e['unit']]['unit']
+                multiplier = unit_conversion_dict[e['unit']]['multiplier']
+                e['unit'] = new_unit
+                e['amount'] *= multiplier
+            else:
+                
+                multiplier = e['unit_multiplier']
+                logging.warning(f"{e['unit']} could not be converted")
+
 
     return data
 
