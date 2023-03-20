@@ -461,7 +461,7 @@ def extract(path_to_zip) -> list:
         activity_info["exchanges"] = exchanges.to_dict("records")
         activity_info["contacts"] = contact_list
         activity_info["flow properties"] = flow_properties_list
-        activity_info['_unit_group'] = unit_gr_dict
+        activity_info['_unit_group'] = unit_gr_list
         activity_info['_unit_flow_prop'] = unit_fp_dict # used later for unit conv
         activity_info_list.append(activity_info)
 
@@ -511,11 +511,16 @@ def reorganise_unit_group_data(unit_list):
 
     ug_dict = {}
     for ug in unit_list:
-    
+        
+        # transform multipliers to numbers
+        ug['unit_amount'] = [float(number) for number in ug['unit_amount']]
+
         unit_name = ug['unit_name'][int(ug['ref_to_refunit'])]
         unit_amount = float(ug['unit_amount'][int(ug['ref_to_refunit'])])
+        ref_unit_name = ug['unit_name'][ug['unit_amount'].index(1)]
     
-        ug_dict[ug['ug_uuid']] = {'name':unit_name,'amount':unit_amount}
+        ug_dict[ug['ug_uuid']] = {'name':unit_name,'amount':unit_amount,
+        'ref_unit':ref_unit_name}
 
     return ug_dict
 
@@ -622,7 +627,8 @@ def get_flowproperties_from_etree(etree_dict:dict)->list:
 def fp_dict(flow_properties:list,ug_dict:dict):
     """combines data from the unit group folder and the flow properties folder
     to construct get the unit and the flow property of each exchange using as key
-    data from the ... exchanges? folder
+    data from the ... exchanges? folder as well as the multiplier associated with
+    a reference unit
 
     Parameters
     ----------
@@ -643,7 +649,9 @@ def fp_dict(flow_properties:list,ug_dict:dict):
             'flow property':fp['flow_property_name'],
             'unit':ug_dict[fp['refObjectId_unitgroup']]['name'],
             'unit_multiplier':ug_dict[fp['refObjectId_unitgroup']]['amount'],
+            'unit_reference':ug_dict[fp['refObjectId_unitgroup']]['ref_unit']
             }
+        
         fp_dict[fp['refobjuuid']] = d
     
     return fp_dict

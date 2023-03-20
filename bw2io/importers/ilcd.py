@@ -18,9 +18,9 @@ class ILCDImporter(LCIImporter):
         
         self.strategies = [
             rename_activity_keys,
-            get_activity_unit,
             set_production_exchange,
             convert_to_default_units,
+            get_activity_unit,
             assign_only_product_as_production,
             map_to_biosphere3,
             set_default_location,
