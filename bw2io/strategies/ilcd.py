@@ -63,7 +63,7 @@ def rename_activity_keys(data:list):
 
 
 def get_activity_unit(data:list):
-    """Sets the unit of the activities"""
+    """Sets the unit of the activities. Better if units are already corrected"""
 
     # in ilcd the unit is in the reference product, that should be identified 
     # with an internal reference code.
@@ -129,8 +129,9 @@ def set_production_exchange(data:list)->list:
     return data
 
 def convert_to_default_units(data:list):
-    """convert the data to the defaults units used in brightway. This means scaling
-    the values .. and probably the uncertainty 
+    """convert the data to the defaults units used in brightway. This means 
+    scaling the values .. and probably the uncertainty , only in the exchanges.
+    The activity unit is picked from the reference flow later.
 
     Parameters
     ----------
@@ -148,21 +149,21 @@ def convert_to_default_units(data:list):
 
     default_units = {f['unit'] for f in unit_conversion_dict.values()}
 
-    # TODO get the default units in ilcd, then convert to them with the multiplier
+    # TODO improve code base. very clumsy 
     # and to the default unit in brightway.
     # https://eplca.jrc.ec.europa.eu/EF-node/unitgroupList.xhtml;jsessionid=C2A25849AC0F1C03FC8DDFED6AC62AA5?stock=default
 
 
     for ds in data:
 
-        ds['unit'] = bw2io.units.normalize_units(ds['unit'])
+        # ds['unit'] = bw2io.units.normalize_units(ds['unit'])
 
-        if ds['unit'] in unit_conversion_dict and ds['unit'] not in default_units:
-            ds['unit'] = unit_conversion_dict[ds['unit']]['unit']
-            #TODO they do not have an amount it needs to be changed in the exchange list
-            #ds['amount'] *= unit_conversion_dict[ds['unit']]['multiplier']
-        else:
-            logging.warning(f"{ds['unit']} could not be converted")
+        # if ds['unit'] in unit_conversion_dict and ds['unit'] not in default_units:
+        #     ds['unit'] = unit_conversion_dict[ds['unit']]['unit']
+        #     #TODO they do not have an amount it needs to be changed in the exchange list
+        #     #ds['amount'] *= unit_conversion_dict[ds['unit']]['multiplier']
+        # else:
+        #     logging.warning(f"{ds['unit']} could not be converted")
             
         for e in ds['exchanges']:
 
@@ -178,10 +179,20 @@ def convert_to_default_units(data:list):
                 e['unit'] = new_unit
                 e['amount'] *= multiplier
             else:
-                
+                # convert to ilcd default first
                 multiplier = e['unit_multiplier']
-                logging.warning(f"{e['unit']} could not be converted")
+                new_unit = e['unit_reference']
+                e['amount'] *= multiplier
+                e['unit'] = new_unit
 
+                # convert to bw default
+                e['unit'] = bw2io.units.normalize_units(e['unit'])
+                if e['unit'] in default_units:
+                    continue
+                new_unit = unit_conversion_dict[e['unit']]['unit']
+                multiplier = unit_conversion_dict[e['unit']]['multiplier']
+                e['unit'] = new_unit
+                e['amount'] *= multiplier
 
     return data
 
