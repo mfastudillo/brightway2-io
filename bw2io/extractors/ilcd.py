@@ -13,60 +13,61 @@ def xpaths()-> dict:
     """
     # Xpath for values in process XML file will return one value in a list
     xpaths_process = {
-        # process information
-        "basename": "/processDataSet/processInformation/dataSetInformation/name/baseName/text()",
-        "treatment_standards_routes": "/processDataSet/processInformation/dataSetInformation/name/treatmentStandardsRoutes/text()",
-        "mix_and_location_types": "/processDataSet/processInformation/dataSetInformation/name/mixAndLocationTypes/text()",
-        "functional_unit_flow_properties": "/processDataSet/processInformation/dataSetInformation/name/functionalUnitFlowProperties/text()",
-        "uuid": "/processDataSet/processInformation/dataSetInformation/common:UUID/text()",
-        "general_comment":"/processDataSet/processInformation/dataSetInformation/common:generalComment/text()",
-        "reference_year": "/processDataSet/processInformation/time/common:referenceYear/text()",
-        "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
-        "time_representativeness_description": "/processDataSet/processInformation/time/common:timeRepresentativenessDescription/text()",
-        "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
-        "LatLong": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@latitudeAndLongitude",
-        "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
-        # Xpath for values in process XML file, will return multiple values as a list
-        "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter/@name",
-        "parameter_comment":"/processDataSet/processInformation/mathematicalRelations/variableParameter/comment/text()",
-        "parameter_mean_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/meanValue/text()",
-        "parameter_minimum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/minimumValue/text()",
-        "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/maximumValue/text()",
-        "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter/relativeStandardDeviation95In/text()",
-        "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter/formula/text()",
-        # administrative info
-        'intended_application':"/processDataSet/administrativeInformation/common:commissionerAndGoal/common:intendedApplications/text()",
-        'dataset_format':"/processDataSet/administrativeInformation/dataEntryBy/common:referenceToDataSetFormat/common:shortDescription/text()",
-        "licensetype":"/processDataSet/administrativeInformation/publicationAndOwnership/common:licenseType/text()",
-        # exchanges
-        "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
-        "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
-        "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
-        "exchanges_direction": "/processDataSet/exchanges/exchange/exchangeDirection/text()",
-        "exchanges_amount": "/processDataSet/exchanges/exchange/resultingAmount/text()",
+    # process information
+    "basename": "/processDataSet/processInformation/dataSetInformation/name/baseName/text()",
+    "treatment_standards_routes": "/processDataSet/processInformation/dataSetInformation/name/treatmentStandardsRoutes/text()",
+    "mix_and_location_types": "/processDataSet/processInformation/dataSetInformation/name/mixAndLocationTypes/text()",
+    "functional_unit_flow_properties": "/processDataSet/processInformation/dataSetInformation/name/functionalUnitFlowProperties/text()",
+    "uuid": "/processDataSet/processInformation/dataSetInformation/common:UUID/text()",
+    "general_comment":"/processDataSet/processInformation/dataSetInformation/common:generalComment/text()",
+    "reference_year": "/processDataSet/processInformation/time/common:referenceYear/text()",
+    "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
+    "time_representativeness_description": "/processDataSet/processInformation/time/common:timeRepresentativenessDescription/text()",
+    "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
+    "LatLong": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@latitudeAndLongitude",
+    "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
+    # Xpath for values in process XML file, will return multiple values as a list
+    "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter/@name",
+    "parameter_comment":"/processDataSet/processInformation/mathematicalRelations/variableParameter/comment/text()",
+    "parameter_mean_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/meanValue/text()",
+    "parameter_minimum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/minimumValue/text()",
+    "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/maximumValue/text()",
+    "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter/relativeStandardDeviation95In/text()",
+    "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter/formula/text()",
+    # administrative info
+    'intended_application':"/processDataSet/administrativeInformation/common:commissionerAndGoal/common:intendedApplications/text()",
+    'dataset_format':"/processDataSet/administrativeInformation/dataEntryBy/common:referenceToDataSetFormat/common:shortDescription/text()",
+    "licensetype":"/processDataSet/administrativeInformation/publicationAndOwnership/common:licenseType/text()",
+    # exchanges
+    "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
+    "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
+    "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
+    "exchanges_direction": "/processDataSet/exchanges/exchange/exchangeDirection/text()",
+    "exchanges_amount": "/processDataSet/exchanges/exchange/resultingAmount/text()",
     }
 
     # Xpath for values in flow XML files, will return one values in a list
+    internal_id = '/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()'
     xpaths_flows = {
-        # flowinformation
-        "basename": "/flowDataSet/flowInformation/dataSetInformation/name/baseName/text()",
-        "uuid": "/flowDataSet/flowInformation/dataSetInformation/common:UUID/text()",
-        "category_0": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=0]/text()",
-        "category_1": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=1]/text()",
-        "category_2": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
-        'CAS number':"/flowDataSet/flowInformation/dataSetInformation/CASNumber/text()",
-        # modelling and validation
-        "type": "/flowDataSet/modellingAndValidation/LCIMethod/typeOfDataSet/text()",
-        "value": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/meanValue/text()",
-        # flow properties
-        "refobj": "/flowDataSet/flowProperties/flowProperty[@dataSetInternalID=/flowDataSet/flowInformation/quantitativeReference/referenceToReferenceFlowProperty/text()]/referenceToFlowPropertyDataSet/@refObjectId",
-        "flow property description":"/flowDataSet/flowProperties/flowProperty/referenceToFlowPropertyDataSet/common:shortDescription/text()",
+    # flowinformation
+    "basename": "/flowDataSet/flowInformation/dataSetInformation/name/baseName/text()",
+    "uuid": "/flowDataSet/flowInformation/dataSetInformation/common:UUID/text()",
+    "category_0": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=0]/text()",
+    "category_1": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=1]/text()",
+    "category_2": "/flowDataSet/flowInformation/dataSetInformation/classificationInformation/common:elementaryFlowCategorization/common:category[@level=2]/text()",
+    'CAS number':"/flowDataSet/flowInformation/dataSetInformation/CASNumber/text()",
+    # modelling and validation
+    "type": "/flowDataSet/modellingAndValidation/LCIMethod/typeOfDataSet/text()",
+    "value": f"/flowDataSet/flowProperties/flowProperty[@dataSetInternalID={internal_id}]/meanValue/text()",
+    # flow properties
+    "refobj": f"/flowDataSet/flowProperties/flowProperty[@dataSetInternalID={internal_id}]/referenceToFlowPropertyDataSet/@refObjectId",
+    "flow property description":f"/flowDataSet/flowProperties/flowProperty[@dataSetInternalID={internal_id}]/referenceToFlowPropertyDataSet/common:shortDescription/text()",
     }
 
     xpath_contacts = {
-        'email':"/contactDataSet/contactInformation/dataSetInformation/email/text()",
-        'website':"/contactDataSet/contactInformation/dataSetInformation/WWWAddress/text()",
-        'short_name':"/contactDataSet/contactInformation/dataSetInformation/common:shortName/text()",
+    'email':"/contactDataSet/contactInformation/dataSetInformation/email/text()",
+    'website':"/contactDataSet/contactInformation/dataSetInformation/WWWAddress/text()",
+    'short_name':"/contactDataSet/contactInformation/dataSetInformation/common:shortName/text()",
     }
     xpath_flowproperties = {
     'flow_property_name':"/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:name[@xml:lang='en']/text()", # only the english one
