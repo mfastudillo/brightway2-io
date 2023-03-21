@@ -162,7 +162,7 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
 
 def extract_all_relevant_info(file_path: Union[Path, str])-> dict:
     """extracts all the relevant info from a zip file containing a lci in ilcd 
-    format
+    format (DEPRECATED)
 
     Args:
         file_path (Union[Path, str]): path to the file bein extracted
@@ -259,7 +259,7 @@ def get_xml_value(xml_tree, xpath_str, default_ns, namespaces)-> dict:
 
 
 def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
-    """_summary_
+    """(deprecated)
 
     Args:
         flowproperty_uuid (str): unique identifier of flow property
@@ -442,19 +442,19 @@ def extract(path_to_zip) -> list:
         exchanges = exchanges.drop(["value", "exchanges_amount"], axis=1)
 
         # add unit and flow property from lookup
-        unit_fp_df_v0 = pd.DataFrame(
-            exchanges.refobj.map(lookup_flowproperty).to_list(),
-            index=exchanges.index,
-            columns=["unit", "flow property"],
-        )
-        # new approach instead of lookup
+        # unit_fp_df_v0 = pd.DataFrame(
+        #     exchanges.refobj.map(lookup_flowproperty).to_list(),
+        #     index=exchanges.index,
+        #     columns=["unit", "flow property"],
+        # )
+        # # new approach instead of lookup
         unit_fp_df = pd.DataFrame(exchanges.refobj.map(unit_fp_dict).to_list(),
         index=exchanges.index)
 
-        # validation, the new way is equivalent to lookup
-        comparison = unit_fp_df_v0.compare(unit_fp_df[unit_fp_df_v0.columns],
-        result_names=('v0','v1'),align_axis=0)
-        #assert len(comparison) == 0,comparison
+        # # validation, the new way is equivalent to lookup
+        # comparison = unit_fp_df_v0.compare(unit_fp_df[unit_fp_df_v0.columns],
+        # result_names=('v0','v1'),align_axis=0)
+        # #assert len(comparison) == 0,comparison
 
         exchanges[unit_fp_df.columns] = unit_fp_df
 
