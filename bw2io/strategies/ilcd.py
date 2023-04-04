@@ -42,10 +42,10 @@ def rename_activity_keys(data:list):
 
     renaming_act_dict = {'basename':'name'}
     renaming_exchanges_dict = {'basename':'name',
-    'Elementary flow':'biosphere',
-    'Product flow':'technosphere',
-    'Waste flow':'technosphere',
-    'Other flow': 'technosphere',}# ¿?
+    'Elementary flow':'biosphere', # Exchange between nature (ecosphere) and technosphere, e.g. an emission, resource.
+    'Product flow':'technosphere', # Exchange of goods or services within technosphere, with a positive economic/market value.
+    'Waste flow':'technosphere', # Exchange of matters within the technosphere, with a economic/market value equal or below "0".
+    'Other flow': 'technosphere',}# Exchange of other type, e.g. dummy or modelling support flows.
 
     for ds in data:
         
@@ -153,7 +153,15 @@ def convert_to_default_units(data:list):
     
     # ilcd defaults
     # https://eplca.jrc.ec.europa.eu/EF-node/unitgroupList.xhtml;jsessionid=C2A25849AC0F1C03FC8DDFED6AC62AA5?stock=default
+    default_units_ilcd = {
+    'Mass':'kg',
+    'Radioactivity':'kBq',
+    'Energy':'MJ', 
+    'Area*time':'m2*a',
+    'Goods transport (mass*distance)':'',
+    'Volume':'m3',
 
+    }
 
     for ds in data:
             
@@ -165,7 +173,7 @@ def convert_to_default_units(data:list):
             else:
                 # convert to ilcd default first
                 multiplier = e['unit_multiplier']
-                new_unit = e['unit_reference']
+                new_unit = default_units_ilcd[e['flow property']]
                 e['amount'] *= multiplier
                 e['unit'] = new_unit
                 
