@@ -34,6 +34,8 @@ def xpaths()-> dict:
     "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/maximumValue/text()",
     "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter/relativeStandardDeviation95In/text()",
     "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter/formula/text()",
+    "parameter_distrib":"/processDataSet/processInformation/mathematicalRelations/variableParameter/uncertaintyDistributionType/text()",
+
     # administrative info
     'intended_application':"/processDataSet/administrativeInformation/common:commissionerAndGoal/common:intendedApplications/text()",
     'dataset_format':"/processDataSet/administrativeInformation/dataEntryBy/common:referenceToDataSetFormat/common:shortDescription/text()",
@@ -44,6 +46,9 @@ def xpaths()-> dict:
     "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
     "exchanges_direction": "/processDataSet/exchanges/exchange/exchangeDirection/text()",
     "exchanges_amount": "/processDataSet/exchanges/exchange/resultingAmount/text()",
+    "_exchanges_amount_min": "/processDataSet/exchanges/exchange/minimumAmount/text()",
+    "_exchanges_amount_max": "/processDataSet/exchanges/exchange/maximumAmount/text()",
+    "_exchanges_amount_distrib": "/processDataSet/exchanges/exchange/uncertaintyDistributionType/text()",
     }
 
     # Xpath for values in flow XML files, will return one values in a list
@@ -74,12 +79,18 @@ def xpaths()-> dict:
     'refObjectId_unitgroup':'/flowPropertyDataSet/flowPropertiesInformation/quantitativeReference/referenceToReferenceUnitGroup/@refObjectId',
     "refobjuuid":'/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:UUID/text()'
     }
-
+    
+    unit_internal_id = '/unitGroupDataSet/unitGroupInformation/quantitativeReference/referenceToReferenceUnit/text()'
     xpath_unitgroups = {
-    'ref_to_refunit':'/unitGroupDataSet/unitGroupInformation/quantitativeReference/referenceToReferenceUnit/text()',
+    'ref_to_refunit':unit_internal_id,
     'ug_uuid':'/unitGroupDataSet/unitGroupInformation/dataSetInformation/common:UUID/text()',
-    'unit_name':'/unitGroupDataSet/units/unit/name/text()',
-    'unit_amount':'/unitGroupDataSet/units/unit/meanValue/text()',
+    'unit_name':f'/unitGroupDataSet/units/unit[@dataSetInternalID={unit_internal_id}]/name/text()',
+    'unit_amount':f'/unitGroupDataSet/units/unit[@dataSetInternalID={unit_internal_id}]/meanValue/text()',
+    'ug_name':"/unitGroupDataSet/unitGroupInformation/dataSetInformation/common:name[@xml:lang='en']/text()",
+    }
+
+    xpaths_lifecyclemodel = {
+    'ref_to_refproc':"/lifeCycleModelDataSet/lifeCycleModelInformation/quantitativeReference/referenceToReferenceProcess/text()"
     }
 
     xpaths_dict = {'xpath_contacts':xpath_contacts,'xpaths_flows':xpaths_flows,
@@ -90,7 +101,7 @@ def xpaths()-> dict:
 
 
 def namespaces_dict()-> dict:
-    # Namespaces to use with the XPath
+    # Namespaces to use with the XPath (from files under xmlns)
     namespaces = {
         "default_process_ns": {"pns": "http://lca.jrc.it/ILCD/Process"},
         "default_flow_ns": {"fns": "http://lca.jrc.it/ILCD/Flow"},
@@ -98,6 +109,7 @@ def namespaces_dict()-> dict:
         'default_contact_ns': {"contact":"http://lca.jrc.it/ILCD/Contact"},
         "default_fp_ns":{'fpns':'http://lca.jrc.it/ILCD/FlowProperty'},
         "default_unitgroup_ns":{'ugns':'http://lca.jrc.it/ILCD/UnitGroup'},
+        "lifecyclemodel_ns":{'lcmns':'http://eplca.jrc.ec.europa.eu/ILCD/LifeCycleModel/2017'}
     }
 
     return namespaces
@@ -221,6 +233,7 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
     'processDataSet':namespaces["default_process_ns"],
     "flowPropertyDataSet":namespaces["default_fp_ns"],
     "unitGroupDataSet":namespaces['default_unitgroup_ns'],
+    "lifeCycleModelDataSet":namespaces['lifecyclemodel_ns']
     }
 
     default_ns = selec_namespace[hint]
@@ -403,8 +416,8 @@ def extract(path_to_zip) -> list:
     contact_list = get_contact_from_etree(etrees_dict)
 
     # get unit group data 
-    unit_gr_list = get_unitdata_from_etree(etree_dict=etrees_dict)
-    unit_gr_dict = reorganise_unit_group_data(unit_gr_list)
+    #unit_gr_list = get_unitdata_from_etree(etree_dict=etrees_dict)
+    unit_gr_dict = get_unitdata_from_etree(etree_dict=etrees_dict)
 
     # get flow properties
     flow_properties_list = get_flowproperties_from_etree(etrees_dict)
@@ -449,6 +462,9 @@ def extract(path_to_zip) -> list:
         #     columns=["unit", "flow property"],
         # )
         # # new approach instead of lookup
+        missing_keys = set(exchanges.refobj).difference(set(unit_fp_dict))
+        assert len(missing_keys) == 0,f"these keys are missing a unit and flow prop {missing_keys}"
+
         unit_fp_df = pd.DataFrame(exchanges.refobj.map(unit_fp_dict).to_list(),
         index=exchanges.index)
 
@@ -462,7 +478,7 @@ def extract(path_to_zip) -> list:
         activity_info["exchanges"] = exchanges.to_dict("records")
         activity_info["contacts"] = contact_list
         activity_info["flow properties"] = flow_properties_list
-        activity_info['_unit_group'] = unit_gr_list
+        # activity_info['_unit_group'] = unit_gr_list
         activity_info['_unit_flow_prop'] = unit_fp_dict # used later for unit conv
         activity_info_list.append(activity_info)
 
@@ -487,7 +503,8 @@ class ILCDExtractor(object):
         return data
 
 def get_unitdata_from_etree(etree_dict:dict)->dict:
-    """extracts data from the unitgroups xml files
+    """extracts data from the unitgroups xml files. for each dataset the uuid in 
+    dataset information, and the unit name and multiplier 
 
     Args:
         etree_dict (dict): _description_
@@ -496,7 +513,7 @@ def get_unitdata_from_etree(etree_dict:dict)->dict:
         dict: refobj uuid as key and the name of the unit and multiplier factor
         as values inside a dict
     """
-    unit_list = []
+    unit_d = {}
 
     xpaths_dict = xpaths()
     xpaths_unitgr = xpaths_dict['xpaths_unitgroups']
@@ -504,9 +521,11 @@ def get_unitdata_from_etree(etree_dict:dict)->dict:
     for _,etree in etree_dict.get('unitgroups').items():
 
         unit_gr = apply_xpaths_to_xml_file(xpaths_unitgr,etree)
-        unit_list.append(unit_gr)
+        
+        unit_d[unit_gr['ug_uuid']] = {'unit':unit_gr['unit_name'],
+        'multiplier':float(unit_gr['unit_amount'])}
 
-    return unit_list
+    return unit_d
 
 def reorganise_unit_group_data(unit_list):
 
@@ -648,9 +667,9 @@ def fp_dict(flow_properties:list,ug_dict:dict):
 
         d = {
             'flow property':fp['flow_property_name'],
-            'unit':ug_dict[fp['refObjectId_unitgroup']]['name'],
-            'unit_multiplier':ug_dict[fp['refObjectId_unitgroup']]['amount'],
-            'unit_reference':ug_dict[fp['refObjectId_unitgroup']]['ref_unit']
+            'unit':ug_dict[fp['refObjectId_unitgroup']]['unit'],
+            'unit_multiplier':ug_dict[fp['refObjectId_unitgroup']]['multiplier'],
+            #'unit_reference':ug_dict[fp['refObjectId_unitgroup']]['ref_unit']
             }
         
         fp_dict[fp['refobjuuid']] = d
