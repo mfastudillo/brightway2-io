@@ -40,15 +40,27 @@ def xpaths()-> dict:
     'intended_application':"/processDataSet/administrativeInformation/common:commissionerAndGoal/common:intendedApplications/text()",
     'dataset_format':"/processDataSet/administrativeInformation/dataEntryBy/common:referenceToDataSetFormat/common:shortDescription/text()",
     "licensetype":"/processDataSet/administrativeInformation/publicationAndOwnership/common:licenseType/text()",
-    # exchanges
+    # exchanges (we start exchange data by exchange_ to parse it later )
     "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
     "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
     "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
     "exchanges_direction": "/processDataSet/exchanges/exchange/exchangeDirection/text()",
     "exchanges_amount": "/processDataSet/exchanges/exchange/resultingAmount/text()",
-    "_exchanges_amount_min": "/processDataSet/exchanges/exchange/minimumAmount/text()",
-    "_exchanges_amount_max": "/processDataSet/exchanges/exchange/maximumAmount/text()",
-    "_exchanges_amount_distrib": "/processDataSet/exchanges/exchange/uncertaintyDistributionType/text()",
+    "exchanges_amount_min": "/processDataSet/exchanges/exchange/minimumAmount/text()",
+    "exchanges_amount_max": "/processDataSet/exchanges/exchange/maximumAmount/text()",
+    "exchanges_amount_distrib": "/processDataSet/exchanges/exchange/uncertaintyDistributionType/text()",
+#    "exchanges_param":"/processDataSet/exchanges/exchange/referenceToVariable/text()",
+    }
+
+    xpaths_exchanges = {
+    "exchanges_name": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/referenceToFlowDataSet/common:shortDescription/text()",
+    "exchanges_uuid": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/referenceToFlowDataSet/@refObjectId",
+    'flow_uuid':"/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/referenceToFlowDataSet/@refObjectId",
+    'exchanges_amount':"/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/resultingAmount/text()",
+    'exchanges_param_name':"/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/referenceToVariable/text()",
+    "exchanges_amount_min": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/minimumAmount/text()",
+    "exchanges_amount_max": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/maximumAmount/text()",
+    "exchanges_amount_distrib": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/uncertaintyDistributionType/text()",
     }
 
     # Xpath for values in flow XML files, will return one values in a list
@@ -90,12 +102,15 @@ def xpaths()-> dict:
     }
 
     xpaths_lifecyclemodel = {
-    'ref_to_refproc':"/lifeCycleModelDataSet/lifeCycleModelInformation/quantitativeReference/referenceToReferenceProcess/text()"
+    'ref_to_refproc':"/lifeCycleModelDataSet/lifeCycleModelInformation/quantitativeReference/referenceToReferenceProcess/text()",
+    'internal_ids':"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance/@dataSetInternalID",
+    'downstream_bruto':"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance/connections/outputExchange/downstreamProcess/@id",
     }
 
     xpaths_dict = {'xpath_contacts':xpath_contacts,'xpaths_flows':xpaths_flows,
     'xpaths_process':xpaths_process,'xpath_flowproperties':xpath_flowproperties,
-    'xpaths_unitgroups':xpath_unitgroups}
+    'xpaths_unitgroups':xpath_unitgroups,'xpaths_exchanges':xpaths_exchanges,
+    'xpaths_lifecyclemodel':xpaths_lifecyclemodel}
 
     return xpaths_dict
 
@@ -132,6 +147,7 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
         "flows": 4,
         "processes": 5,
         "external_docs": 6,
+        "lifecyclemodels":7,
     }
 
     # for the moment we ignore some of the folders
@@ -412,6 +428,10 @@ def extract(path_to_zip) -> list:
 
     etrees_dict = extract_zip(path_to_zip)
 
+    #get product system model if exists
+    if 'lifecyclemodels' in etrees_dict:
+        psm = get_systemmodel(etrees_dict)
+
     # get contanct data
     contact_list = get_contact_from_etree(etrees_dict)
 
@@ -527,6 +547,41 @@ def get_unitdata_from_etree(etree_dict:dict)->dict:
 
     return unit_d
 
+def get_systemmodel(etree_dict:dict)->dict:
+    """_summary_
+
+    Parameters
+    ----------
+    etree_dict : dict
+        _description_
+
+    Returns
+    -------
+    dict
+        _description_
+    """
+    xpaths_dict = xpaths()
+    xpaths_psm = xpaths_dict['xpaths_lifecyclemodel']
+    
+    for _,etree in etree_dict.get('lifecyclemodels').items():
+
+        psm = apply_xpaths_to_xml_file(xpaths_psm,etree)
+
+    # with the internal id we can get the input and output flow connexions
+    for internal_id in psm['internal_ids']:
+
+        d = {f'downstream_id_{internal_id}':
+        f"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance[@dataSetInternalID={internal_id}]/connections/outputExchange/downstreamProcess/@id",
+        f"downstream_uuid_{internal_id}":
+        f"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance[@dataSetInternalID={internal_id}]/connections/outputExchange/downstreamProcess/@flowUUID",
+        f'upstream_uuid_{internal_id}':
+        f"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance[@dataSetInternalID={internal_id}]/connections/outputExchange/@flowUUID",
+        }
+
+
+
+    return psm
+
 def reorganise_unit_group_data(unit_list):
 
     ug_dict = {}
@@ -593,7 +648,7 @@ def get_activity_from_etree(etrees_dict:dict)->list:
         activity_info = {}
         for key, value in activity.items():
 
-            if key.startswith("exchanges"):
+            if key.startswith("exchanges") and value is not None:
                 exchange_dict[key] = value
             else:
                 activity_info[key] = value
@@ -604,6 +659,18 @@ def get_activity_from_etree(etrees_dict:dict)->list:
     return activity_list
     
 def get_flows_from_etree(etrees_dict:dict)->list:
+    """extracts data from 'flows' folder
+
+    Parameters
+    ----------
+    etrees_dict : dict
+        _description_
+
+    Returns
+    -------
+    list
+        _description_
+    """
     namespaces = namespaces_dict()
     default_ns = namespaces["default_flow_ns"]
     ns = namespaces["others"]
