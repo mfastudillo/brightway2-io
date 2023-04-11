@@ -83,12 +83,18 @@ def set_activity_parameters(data:list):
     Args:
         data (list): _description_
     """
+    keys = ['parameter_name','parameter_comment','parameter_formula',
+    'parameter_mean_value','parameter_minimum_value','parameter_maximum_value',
+    'parameter_std95','parameter_distrib',
+    ]
     for ds in data:
         
-        params = [ds['parameter_name'],ds['parameter_comment'],
-        ds['parameter_formula'],ds['parameter_mean_value'],
-        ds['parameter_minimum_value'],ds['parameter_maximum_value'],
-        ds['parameter_std95'],]
+        params = [ds[k] for k in keys]
+
+        # params = [ds['parameter_name'],ds['parameter_comment'],
+        # ds['parameter_formula'],ds['parameter_mean_value'],
+        # ds['parameter_minimum_value'],ds['parameter_maximum_value'],
+        # ds['parameter_std95'],]
 
         # force it to be a list of list in all cases
         params = [alist if isinstance(alist,list) else [alist]for alist in params]
@@ -97,12 +103,16 @@ def set_activity_parameters(data:list):
 
         if has_params:
             params_reorganised = []
-            for name,comment,formula,mean,minimum,maximum,std, in zip_longest(*params):
+            for name,comment,formula,mean,minimum,maximum,std,distr, in zip_longest(*params):
                 d = {'name':name,'comment':comment,'formula':formula,'mean':mean,
-                'minimum':minimum,'maximum':maximum,'std':std,    
+                'minimum':minimum,'maximum':maximum,'std':std,'parameter_distrib':distr,  
                 }
                 params_reorganised.append(d)
             ds['parameters'] = params_reorganised
+
+            # clean the clutter
+            for k in keys:
+                ds.pop(k, None)
 
     return data
     
