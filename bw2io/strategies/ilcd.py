@@ -68,13 +68,15 @@ def get_activity_unit(data:list):
 
     # in ilcd the unit is in the reference product, that should be identified 
     # with an internal reference code.
-    
+    unit_found = False
     for ds in data:
         for exchange in ds['exchanges']:
             if exchange.get('exchanges_internal_id') == ds['reference_to_reference_flow']:
                 ds['unit'] = exchange['unit']
                 ds['exchanges_name'] = exchange['exchanges_name']
+                unit_found = True
                 break
+    assert unit_found,'unit of the activity could not be found. Failed strategy'
     return data
 
 def set_activity_parameters(data:list):
@@ -117,7 +119,7 @@ def set_activity_parameters(data:list):
     return data
     
 def set_default_location(data:list):
-
+    """assigns a default location (GLO) if none is given"""
     for ds in data:
 
         ds['location'] = ds.get('location','GLO')
