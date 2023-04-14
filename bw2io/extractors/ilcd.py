@@ -540,7 +540,7 @@ def get_unitdata_from_etree(etree_dict:dict)->dict:
         unit_gr = apply_xpaths_to_xml_file(xpaths_unitgr,etree)
         
         unit_d[unit_gr['ug_uuid']] = {'unit':unit_gr['unit_name'],
-        'multiplier':float(unit_gr['unit_amount'])}
+        'multiplier':float(unit_gr['unit_amount']),'unit_group':unit_gr['ug_name']}
 
     return unit_d
 
@@ -733,7 +733,7 @@ def fp_dict(flow_properties:list,ug_dict:dict):
             'flow property':fp['flow_property_name'],
             'unit':ug_dict[fp['refObjectId_unitgroup']]['unit'],
             'unit_multiplier':ug_dict[fp['refObjectId_unitgroup']]['multiplier'],
-            #'unit_reference':ug_dict[fp['refObjectId_unitgroup']]['ref_unit']
+            'unit_group':ug_dict[fp['refObjectId_unitgroup']]['unit_group'],
             }
         
         fp_dict[fp['refobjuuid']] = d
@@ -946,6 +946,8 @@ def extract(path_to_zip)->list:
         f['flow property'] = unit_fp_dict[f['refobj']]['flow property']
         f['unit'] = unit_fp_dict[f['refobj']]['unit']
         f['unit_multiplier'] = unit_fp_dict[f['refobj']]['unit_multiplier']
+        f['unit_group'] = unit_fp_dict[f['refobj']]['unit_group']
+
     flow_df = pd.DataFrame(flow_list)
 
     activity_info_list = []
