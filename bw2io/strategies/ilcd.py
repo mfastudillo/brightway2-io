@@ -143,7 +143,7 @@ def set_production_exchange(data:list)->list:
     return data
 
 def convert_to_default_units(data:list):
-    """convert the data to the defaults units used in brightway. This means 
+    """convert the data to the defaults units used in Brightway. This means 
     scaling the values .. and probably the uncertainty , only in the exchanges.
     The activity unit is picked from the reference flow later.
 
@@ -163,16 +163,19 @@ def convert_to_default_units(data:list):
     # brightway defaults
     default_units = {f['unit'] for f in unit_conversion_dict.values()}
     
-    # ilcd defaults
+    # ilcd default units per unit group
     # https://eplca.jrc.ec.europa.eu/EF-node/unitgroupList.xhtml;jsessionid=C2A25849AC0F1C03FC8DDFED6AC62AA5?stock=default
+    
     default_units_ilcd = {
-    'Mass':'kg',
-    'Radioactivity':'kBq',
-    'Energy':'MJ', 
-    'Area*time':'m2*a',
-    'Goods transport (mass*distance)':'',
-    'Volume':'m3',
-
+    'Units of mass':'kg',
+    'Units of radioactivity':'kBq',
+    'Units of energy':'MJ', 
+    'Units of area*time':'m2*a',
+    'Units of volume*time':'m3*a',
+    'Units of volume':'m3',
+    'Units of mole':'mol',
+    'Units of mass*time':'kg*a',
+    'Units of items':'Item(s)',
     }
 
     for ds in data:
@@ -180,19 +183,21 @@ def convert_to_default_units(data:list):
         for e in ds['exchanges']:
             
             if math.isclose(e['unit_multiplier'],1):
-                # normalize name
+                # case where ilcd is expressed in its default units (e.g. mass in kg)
+                # we only need to normalize name (e.g kg-> kilogram)
                 e['unit'] = bw2io.units.normalize_units(e['unit'])
             else:
                 # convert to ilcd default first
                 multiplier = e['unit_multiplier']
-                new_unit = default_units_ilcd[e['flow property']]
+                new_unit = default_units_ilcd[e['unit_group']]
                 e['amount'] *= multiplier
                 e['unit'] = new_unit
+                #TODO scale uncertainty 
                 
                 # normalize name
                 e['unit'] = bw2io.units.normalize_units(e['unit'])
 
-                # convert from ilcd default to bw default
+                # convert from ilcd default to bw default if different
                 if e['unit'] not in default_units:
                     new_unit = unit_conversion_dict[e['unit']]['unit']
                     multiplier = unit_conversion_dict[e['unit']]['multiplier']
