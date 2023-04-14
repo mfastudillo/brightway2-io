@@ -8,7 +8,7 @@ from bw2io.extractors.ilcd import (apply_xpaths_to_xml_file,
                                    extract_all_relevant_info, extract_zip,
                                    get_contact_from_etree,
                                    get_flows_from_etree, get_xml_value,
-                                   namespaces_dict, xpaths)
+                                   namespaces_dict, xpaths,extract)
 
 
 # fixtures
@@ -85,3 +85,15 @@ def test_xml_value_getter(example_path):
         namespaces["others"],
     )
     assert v == 'Light duty vehicle',v
+
+def test_extract(example_path):
+
+    data = extract(example_path)
+
+    for ds in data:
+
+        assert 'reference_to_reference_flow' in ds,'missing ref to ref.flow' # used to identify ref. flow
+
+        for e in ds['exchanges']:
+        
+            assert 'exchanges_internal_id' in e,'missing internal id' # used to identify ref. flow
