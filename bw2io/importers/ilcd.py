@@ -24,7 +24,7 @@ class ILCDImporter(LCIImporter):
             assign_only_product_as_production,
             map_to_biosphere3,
             set_default_location,
-            set_activity_parameters,
+            # set_activity_parameters,
         ]
 
 
