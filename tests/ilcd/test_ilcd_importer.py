@@ -25,8 +25,8 @@ def test_importer(example_path):
         assert 'uuid' in ds
         assert 'general_comment' in ds
         assert 'location' in ds
-        assert 'unit' in ds
-        assert 'parameter_formula' in ds
+        assert 'unit' in ds,'missing unit'
+        assert 'parameters' in ds,'missing parameters'
 
         for e in ds.get('exchanges'):
 

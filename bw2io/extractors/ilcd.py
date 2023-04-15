@@ -5,6 +5,93 @@ import pandas as pd
 
 from lxml import etree
 
+def extract_(path_to_zip) -> list:
+    """parse a zip file with the ilcd dataset
+
+    Args:
+        path_to_zip (_type_): _description_
+
+    Returns:
+        list: list of dicts with the extracted data from the xml files. Each
+        element of the list represents an activity.
+    """
+
+    etrees_dict = extract_zip(path_to_zip)
+
+    #get product system model if exists
+    if 'lifecyclemodels' in etrees_dict:
+        psm = get_systemmodel(etrees_dict)
+
+    # get contanct data
+    contact_list = get_contact_from_etree(etrees_dict)
+
+    # get unit group data 
+    unit_gr_dict = get_unitdata_from_etree(etree_dict=etrees_dict)
+
+    # get flow properties
+    flow_properties_list = get_flowproperties_from_etree(etrees_dict)
+    
+    # combine the flow property and unit data
+    unit_fp_dict = fp_dict(flow_properties=flow_properties_list, ug_dict=unit_gr_dict)
+    
+    # extract more info from `flows` folder
+    flow_list = get_flows_from_etree(etrees_dict)
+
+    flow_df = pd.DataFrame(flow_list)
+
+
+    # get activity data and first part of exchanges
+    activity_list = get_activity_from_etree(etrees_dict)
+    
+    activity_info_list = []
+    for activity_info,exchange_dict in activity_list:
+        # this merging could be also done without pandas 
+        try:
+            df_exchages = pd.DataFrame(exchange_dict)
+        except ValueError as ve:
+            # if it is only one
+            df_exchages = pd.Series(exchange_dict,name=0).to_frame().T
+            assert len(df_exchages) == 1,'we may be under the wrong assumption'
+
+        exchanges = flow_df.merge(
+            df_exchages, left_on="uuid", right_on="exchanges_uuid", how="inner"
+        ).drop("exchanges_uuid", axis=1)
+
+        exchanges["amount"] = exchanges["exchanges_amount"].map(float) * exchanges[
+            "value"
+        ].map(float)
+
+        exchanges = exchanges.drop(["value", "exchanges_amount"], axis=1)
+
+        # add unit and flow property from lookup
+        # unit_fp_df_v0 = pd.DataFrame(
+        #     exchanges.refobj.map(lookup_flowproperty).to_list(),
+        #     index=exchanges.index,
+        #     columns=["unit", "flow property"],
+        # )
+        # # new approach instead of lookup
+        missing_keys = set(exchanges.refobj).difference(set(unit_fp_dict))
+        assert len(missing_keys) == 0,f"these keys are missing a unit and flow prop {missing_keys}"
+
+        unit_fp_df = pd.DataFrame(exchanges.refobj.map(unit_fp_dict).to_list(),
+        index=exchanges.index)
+
+        # # validation, the new way is equivalent to lookup
+        # comparison = unit_fp_df_v0.compare(unit_fp_df[unit_fp_df_v0.columns],
+        # result_names=('v0','v1'),align_axis=0)
+        # #assert len(comparison) == 0,comparison
+
+        exchanges[unit_fp_df.columns] = unit_fp_df
+
+        activity_info["exchanges"] = exchanges.to_dict("records")
+        activity_info["contacts"] = contact_list
+        activity_info["flow properties"] = flow_properties_list
+        # activity_info['_unit_group'] = unit_gr_list
+        activity_info['_unit_flow_prop'] = unit_fp_dict # used later for unit conv
+        activity_info_list.append(activity_info)
+
+    return activity_info_list
+
 def xpaths()-> dict:
     """_summary_
 
@@ -34,16 +121,33 @@ def xpaths()-> dict:
     "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/maximumValue/text()",
     "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter/relativeStandardDeviation95In/text()",
     "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter/formula/text()",
+    "parameter_distrib":"/processDataSet/processInformation/mathematicalRelations/variableParameter/uncertaintyDistributionType/text()",
+
     # administrative info
     'intended_application':"/processDataSet/administrativeInformation/common:commissionerAndGoal/common:intendedApplications/text()",
     'dataset_format':"/processDataSet/administrativeInformation/dataEntryBy/common:referenceToDataSetFormat/common:shortDescription/text()",
     "licensetype":"/processDataSet/administrativeInformation/publicationAndOwnership/common:licenseType/text()",
-    # exchanges
+    # exchanges (we start exchange data by exchange_ to parse it later )
     "exchanges_internal_id": "/processDataSet/exchanges/exchange/@dataSetInternalID",
     "exchanges_name": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/common:shortDescription/text()",
     "exchanges_uuid": "/processDataSet/exchanges/exchange/referenceToFlowDataSet/@refObjectId",
     "exchanges_direction": "/processDataSet/exchanges/exchange/exchangeDirection/text()",
     "exchanges_amount": "/processDataSet/exchanges/exchange/resultingAmount/text()",
+    "exchanges_amount_min": "/processDataSet/exchanges/exchange/minimumAmount/text()",
+    "exchanges_amount_max": "/processDataSet/exchanges/exchange/maximumAmount/text()",
+    "exchanges_amount_distrib": "/processDataSet/exchanges/exchange/uncertaintyDistributionType/text()",
+#    "exchanges_param":"/processDataSet/exchanges/exchange/referenceToVariable/text()",
+    }
+
+    xpaths_exchanges = {
+    "exchanges_name": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/referenceToFlowDataSet/common:shortDescription/text()",
+    "exchanges_uuid": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/referenceToFlowDataSet/@refObjectId",
+    'flow_uuid':"/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/referenceToFlowDataSet/@refObjectId",
+    'exchanges_amount':"/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/resultingAmount/text()",
+    'exchanges_param_name':"/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/referenceToVariable/text()",
+    "exchanges_amount_min": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/minimumAmount/text()",
+    "exchanges_amount_max": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/maximumAmount/text()",
+    "exchanges_amount_distrib": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/uncertaintyDistributionType/text()",
     }
 
     # Xpath for values in flow XML files, will return one values in a list
@@ -74,23 +178,32 @@ def xpaths()-> dict:
     'refObjectId_unitgroup':'/flowPropertyDataSet/flowPropertiesInformation/quantitativeReference/referenceToReferenceUnitGroup/@refObjectId',
     "refobjuuid":'/flowPropertyDataSet/flowPropertiesInformation/dataSetInformation/common:UUID/text()'
     }
-
+    
+    unit_internal_id = '/unitGroupDataSet/unitGroupInformation/quantitativeReference/referenceToReferenceUnit/text()'
     xpath_unitgroups = {
-    'ref_to_refunit':'/unitGroupDataSet/unitGroupInformation/quantitativeReference/referenceToReferenceUnit/text()',
+    'ref_to_refunit':unit_internal_id,
     'ug_uuid':'/unitGroupDataSet/unitGroupInformation/dataSetInformation/common:UUID/text()',
-    'unit_name':'/unitGroupDataSet/units/unit/name/text()',
-    'unit_amount':'/unitGroupDataSet/units/unit/meanValue/text()',
+    'unit_name':f'/unitGroupDataSet/units/unit[@dataSetInternalID={unit_internal_id}]/name/text()',
+    'unit_amount':f'/unitGroupDataSet/units/unit[@dataSetInternalID={unit_internal_id}]/meanValue/text()',
+    'ug_name':"/unitGroupDataSet/unitGroupInformation/dataSetInformation/common:name[@xml:lang='en']/text()",
+    }
+
+    xpaths_lifecyclemodel = {
+    'ref_to_refproc':"/lifeCycleModelDataSet/lifeCycleModelInformation/quantitativeReference/referenceToReferenceProcess/text()",
+    'internal_ids':"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance/@dataSetInternalID",
+    'downstream_bruto':"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance/connections/outputExchange/downstreamProcess/@id",
     }
 
     xpaths_dict = {'xpath_contacts':xpath_contacts,'xpaths_flows':xpaths_flows,
     'xpaths_process':xpaths_process,'xpath_flowproperties':xpath_flowproperties,
-    'xpaths_unitgroups':xpath_unitgroups}
+    'xpaths_unitgroups':xpath_unitgroups,'xpaths_exchanges':xpaths_exchanges,
+    'xpaths_lifecyclemodel':xpaths_lifecyclemodel}
 
     return xpaths_dict
 
 
 def namespaces_dict()-> dict:
-    # Namespaces to use with the XPath
+    # Namespaces to use with the XPath (from files under xmlns)
     namespaces = {
         "default_process_ns": {"pns": "http://lca.jrc.it/ILCD/Process"},
         "default_flow_ns": {"fns": "http://lca.jrc.it/ILCD/Flow"},
@@ -98,6 +211,7 @@ def namespaces_dict()-> dict:
         'default_contact_ns': {"contact":"http://lca.jrc.it/ILCD/Contact"},
         "default_fp_ns":{'fpns':'http://lca.jrc.it/ILCD/FlowProperty'},
         "default_unitgroup_ns":{'ugns':'http://lca.jrc.it/ILCD/UnitGroup'},
+        "lifecyclemodel_ns":{'lcmns':'http://eplca.jrc.ec.europa.eu/ILCD/LifeCycleModel/2017'}
     }
 
     return namespaces
@@ -120,6 +234,7 @@ def extract_zip(path: Union[Path, str] = None)-> dict:
         "flows": 4,
         "processes": 5,
         "external_docs": 6,
+        "lifecyclemodels":7,
     }
 
     # for the moment we ignore some of the folders
@@ -209,8 +324,6 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
         dict: _description_
     """
     namespaces = namespaces_dict()
-    # this needs to be modified to be able to pick something different than 
-    # flowDataset
 
     results = {}
     hint = list(xpath_dict.items())[0][1].split('/')[1]
@@ -221,6 +334,7 @@ def apply_xpaths_to_xml_file(xpath_dict:dict, xml_tree)-> dict:
     'processDataSet':namespaces["default_process_ns"],
     "flowPropertyDataSet":namespaces["default_fp_ns"],
     "unitGroupDataSet":namespaces['default_unitgroup_ns'],
+    "lifeCycleModelDataSet":namespaces['lifecyclemodel_ns']
     }
 
     default_ns = selec_namespace[hint]
@@ -387,87 +501,6 @@ def lookup_flowproperty(flowproperty_uuid:str)-> tuple:
     return fp_dict.get(flowproperty_uuid, (None, None))
 
 
-def extract(path_to_zip) -> list:
-    """parse a zip file with the data of one activity.
-
-    Args:
-        path_to_zip (_type_): _description_
-
-    Returns:
-        dict: _description_
-    """
-
-    etrees_dict = extract_zip(path_to_zip)
-
-    # get contanct data
-    contact_list = get_contact_from_etree(etrees_dict)
-
-    # get unit group data 
-    unit_gr_list = get_unitdata_from_etree(etree_dict=etrees_dict)
-    unit_gr_dict = reorganise_unit_group_data(unit_gr_list)
-
-    # get flow properties
-    flow_properties_list = get_flowproperties_from_etree(etrees_dict)
-    
-    # combine the flow property and unit data
-    unit_fp_dict = fp_dict(flow_properties=flow_properties_list, ug_dict=unit_gr_dict)
-    
-    
-    # extract more info on flows
-    flow_list = get_flows_from_etree(etrees_dict)
-
-    flow_df = pd.DataFrame(flow_list)
-
-
-    # get activity data and first part of exchanges
-    activity_list = get_activity_from_etree(etrees_dict)
-    
-    activity_info_list = []
-    for activity_info,exchange_dict in activity_list:
-        # this merging could be also done without pandas 
-        try:
-            df_exchages = pd.DataFrame(exchange_dict)
-        except ValueError as ve:
-            # if it is only one
-            df_exchages = pd.Series(exchange_dict,name=0).to_frame().T
-            assert len(df_exchages) == 1,'we may be under the wrong assumption'
-
-        exchanges = flow_df.merge(
-            df_exchages, left_on="uuid", right_on="exchanges_uuid", how="inner"
-        ).drop("exchanges_uuid", axis=1)
-
-        exchanges["amount"] = exchanges["exchanges_amount"].map(float) * exchanges[
-            "value"
-        ].map(float)
-
-        exchanges = exchanges.drop(["value", "exchanges_amount"], axis=1)
-
-        # add unit and flow property from lookup
-        # unit_fp_df_v0 = pd.DataFrame(
-        #     exchanges.refobj.map(lookup_flowproperty).to_list(),
-        #     index=exchanges.index,
-        #     columns=["unit", "flow property"],
-        # )
-        # # new approach instead of lookup
-        unit_fp_df = pd.DataFrame(exchanges.refobj.map(unit_fp_dict).to_list(),
-        index=exchanges.index)
-
-        # # validation, the new way is equivalent to lookup
-        # comparison = unit_fp_df_v0.compare(unit_fp_df[unit_fp_df_v0.columns],
-        # result_names=('v0','v1'),align_axis=0)
-        # #assert len(comparison) == 0,comparison
-
-        exchanges[unit_fp_df.columns] = unit_fp_df
-
-        activity_info["exchanges"] = exchanges.to_dict("records")
-        activity_info["contacts"] = contact_list
-        activity_info["flow properties"] = flow_properties_list
-        activity_info['_unit_group'] = unit_gr_list
-        activity_info['_unit_flow_prop'] = unit_fp_dict # used later for unit conv
-        activity_info_list.append(activity_info)
-
-    return activity_info_list
-
 
 class ILCDExtractor(object):
     """_summary_
@@ -487,7 +520,8 @@ class ILCDExtractor(object):
         return data
 
 def get_unitdata_from_etree(etree_dict:dict)->dict:
-    """extracts data from the unitgroups xml files
+    """extracts data from the unitgroups xml files. for each dataset the uuid in 
+    dataset information, and the unit name and multiplier 
 
     Args:
         etree_dict (dict): _description_
@@ -496,7 +530,7 @@ def get_unitdata_from_etree(etree_dict:dict)->dict:
         dict: refobj uuid as key and the name of the unit and multiplier factor
         as values inside a dict
     """
-    unit_list = []
+    unit_d = {}
 
     xpaths_dict = xpaths()
     xpaths_unitgr = xpaths_dict['xpaths_unitgroups']
@@ -504,9 +538,46 @@ def get_unitdata_from_etree(etree_dict:dict)->dict:
     for _,etree in etree_dict.get('unitgroups').items():
 
         unit_gr = apply_xpaths_to_xml_file(xpaths_unitgr,etree)
-        unit_list.append(unit_gr)
+        
+        unit_d[unit_gr['ug_uuid']] = {'unit':unit_gr['unit_name'],
+        'multiplier':float(unit_gr['unit_amount']),'unit_group':unit_gr['ug_name']}
 
-    return unit_list
+    return unit_d
+
+def get_systemmodel(etree_dict:dict)->dict:
+    """_summary_
+
+    Parameters
+    ----------
+    etree_dict : dict
+        _description_
+
+    Returns
+    -------
+    dict
+        _description_
+    """
+    xpaths_dict = xpaths()
+    xpaths_psm = xpaths_dict['xpaths_lifecyclemodel']
+    
+    for _,etree in etree_dict.get('lifecyclemodels').items():
+
+        psm = apply_xpaths_to_xml_file(xpaths_psm,etree)
+
+    # with the internal id we can get the input and output flow connexions
+    for internal_id in psm['internal_ids']:
+
+        d = {f'downstream_id_{internal_id}':
+        f"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance[@dataSetInternalID={internal_id}]/connections/outputExchange/downstreamProcess/@id",
+        f"downstream_uuid_{internal_id}":
+        f"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance[@dataSetInternalID={internal_id}]/connections/outputExchange/downstreamProcess/@flowUUID",
+        f'upstream_uuid_{internal_id}':
+        f"/lifeCycleModelDataSet/lifeCycleModelInformation/technology/processes/processInstance[@dataSetInternalID={internal_id}]/connections/outputExchange/@flowUUID",
+        }
+
+
+
+    return psm
 
 def reorganise_unit_group_data(unit_list):
 
@@ -547,7 +618,7 @@ def get_contact_from_etree(etree_dict:dict)->list:
 
 
 def get_activity_from_etree(etrees_dict:dict)->list:
-    """extracts data from the 'processes' folder
+    """extracts data from the 'processes' folder [DEPRECATED]
 
     Args:
         etrees_dict (dict): _description_
@@ -574,7 +645,7 @@ def get_activity_from_etree(etrees_dict:dict)->list:
         activity_info = {}
         for key, value in activity.items():
 
-            if key.startswith("exchanges"):
+            if key.startswith("exchanges") and value is not None:
                 exchange_dict[key] = value
             else:
                 activity_info[key] = value
@@ -585,6 +656,18 @@ def get_activity_from_etree(etrees_dict:dict)->list:
     return activity_list
     
 def get_flows_from_etree(etrees_dict:dict)->list:
+    """extracts data from 'flows' folder
+
+    Parameters
+    ----------
+    etrees_dict : dict
+        _description_
+
+    Returns
+    -------
+    list
+        _description_
+    """
     namespaces = namespaces_dict()
     default_ns = namespaces["default_flow_ns"]
     ns = namespaces["others"]
@@ -648,11 +731,241 @@ def fp_dict(flow_properties:list,ug_dict:dict):
 
         d = {
             'flow property':fp['flow_property_name'],
-            'unit':ug_dict[fp['refObjectId_unitgroup']]['name'],
-            'unit_multiplier':ug_dict[fp['refObjectId_unitgroup']]['amount'],
-            'unit_reference':ug_dict[fp['refObjectId_unitgroup']]['ref_unit']
+            'unit':ug_dict[fp['refObjectId_unitgroup']]['unit'],
+            'unit_multiplier':ug_dict[fp['refObjectId_unitgroup']]['multiplier'],
+            'unit_group':ug_dict[fp['refObjectId_unitgroup']]['unit_group'],
             }
         
         fp_dict[fp['refobjuuid']] = d
     
     return fp_dict
+
+def get_exchanges_ids(etrees_dict)-> dict:
+    """the internal exchange ids of the different processes in the ilcd dataset.
+    This is later used to better parse the exchanges files
+
+    Parameters
+    ----------
+    etrees_dict : dict
+        _description_
+
+    Returns
+    -------
+    dict
+        uuids of activities as keys and internalids of exchanges as values
+    """
+    
+    reorganised = {}
+    for etree in etrees_dict['processes'].values():
+        exchanges_internal_ids = apply_xpaths_to_xml_file(
+        {'uuid':"/processDataSet/processInformation/dataSetInformation/common:UUID/text()",
+        "exchanges_id": "/processDataSet/exchanges/exchange/@dataSetInternalID"},
+        etree)
+
+        reorganised[exchanges_internal_ids['uuid']] = exchanges_internal_ids["exchanges_id"]
+    
+    return reorganised
+
+    
+def get_exchange_data(etree_dict):
+    """extracts the data on exchanges of the processes files
+
+    Parameters
+    ----------
+    etree_dict : _type_
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    exchanges_internal_ids = get_exchanges_ids(etree_dict)
+    d = xpaths()['xpaths_exchanges']
+
+    ex = []
+
+    for path,etree in etree_dict['processes'].items():
+
+        uuid = Path(path).stem[0:36] # trick .. 
+        etre_internal_ex_ids = exchanges_internal_ids[uuid]
+
+
+        exchanges_dict = {}
+        for internal_id in etre_internal_ex_ids:
+            # formats to be specific to the process
+            formatted_xpaths = {k:v.format(internal_id=internal_id) for k,v in d.items()}
+            extract_procceses = apply_xpaths_to_xml_file(formatted_xpaths,etree)
+
+            # reorganise
+            exchanges_dict[extract_procceses['flow_uuid']] = {
+            'exchanges_name':extract_procceses['exchanges_name'],
+            'exchanges_uuid':extract_procceses['exchanges_uuid'],
+            'exchanges_resulting_amount':extract_procceses['exchanges_amount'],
+            'exchanges_param_name':extract_procceses['exchanges_param_name'],
+            "exchanges_amount_min":extract_procceses['exchanges_amount_min'],
+            "exchanges_amount_max":extract_procceses['exchanges_amount_max'],
+            "exchanges_amount_distrib":extract_procceses['exchanges_amount_distrib'],
+            'exchanges_internal_id':internal_id,
+
+            }
+        ex.append(exchanges_dict)
+
+    return ex
+        
+
+def get_param_data(etree_dict:dict)->list:
+    """_summary_
+
+    Parameters
+    ----------
+    etree_dict : dict
+        _description_
+
+    Returns
+    -------
+    list
+        each element contains a list of parameters (if existing of each of the 
+        activities in the ilcd zip file)
+    """
+
+    # get parameter names
+    pnames_d = {}
+    file_uuid_dict = {}
+
+    for file,etree in etree_dict['processes'].items():
+        pnames = apply_xpaths_to_xml_file(
+            {'uuid':"/processDataSet/processInformation/dataSetInformation/common:UUID/text()",
+            "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter/@name"},
+            etree)
+        pnames_d[pnames['uuid']] = pnames['parameter_name']
+        # file_uuid_dict[file] = pnames['uuid']
+        
+    # preformated xpaths    
+    param_xpaths_unformatted = {
+        "parameter_name":"/processDataSet/processInformation/mathematicalRelations/variableParameter[@name='{parameter_name}']/@name",
+        "parameter_comment":"/processDataSet/processInformation/mathematicalRelations/variableParameter[@name='{parameter_name}']/comment/text()",
+        "parameter_mean_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter[@name='{parameter_name}']/meanValue/text()",
+        # "parameter_mean_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter/meanValue/text()",
+        "parameter_minimum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter[@name='{parameter_name}']/minimumValue/text()",
+        "parameter_maximum_value":"/processDataSet/processInformation/mathematicalRelations/variableParameter[@name='{parameter_name}']/maximumValue/text()",
+        "parameter_std95":"/processDataSet/processInformation/mathematicalRelations/variableParameter[@name='{parameter_name}']/relativeStandardDeviation95In/text()",
+        "parameter_formula":"/processDataSet/processInformation/mathematicalRelations/variableParameter[@name='{parameter_name}']/formula/text()",
+        "parameter_distrib":"/processDataSet/processInformation/mathematicalRelations/variableParameter[@name='{parameter_name}']/uncertaintyDistributionType/text()",
+        }
+    
+    # get 
+    act_param_list = []
+    for file,etree in etree_dict['processes'].items():
+        uuid = Path(file).stem[0:36]
+        
+        parameters = pnames_d[uuid]
+
+        if parameters is None:
+            parameters = []
+
+        act_param = []
+        for p in parameters:
+
+            formatted_xpaths = {k:v.format(parameter_name=p) for k,v in param_xpaths_unformatted.items()}
+            param_data = apply_xpaths_to_xml_file(formatted_xpaths,etree)
+            act_param.append(param_data)
+
+        act_param_list.append(act_param)
+
+
+    return act_param_list
+
+def get_act_info(etree_dict:dict)->list:
+
+    xpaths_activity_info = {
+    "basename": "/processDataSet/processInformation/dataSetInformation/name/baseName/text()",
+    "treatment_standards_routes": "/processDataSet/processInformation/dataSetInformation/name/treatmentStandardsRoutes/text()",
+    "mix_and_location_types": "/processDataSet/processInformation/dataSetInformation/name/mixAndLocationTypes/text()",
+    "functional_unit_flow_properties": "/processDataSet/processInformation/dataSetInformation/name/functionalUnitFlowProperties/text()",
+    "uuid": "/processDataSet/processInformation/dataSetInformation/common:UUID/text()",
+    "general_comment":"/processDataSet/processInformation/dataSetInformation/common:generalComment/text()",
+    "reference_year": "/processDataSet/processInformation/time/common:referenceYear/text()",
+    "data_set_valid_until": "/processDataSet/processInformation/time/common:dataSetValidUntil/text()",
+    "time_representativeness_description": "/processDataSet/processInformation/time/common:timeRepresentativenessDescription/text()",
+    "location": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@location",
+    "LatLong": "/processDataSet/processInformation/geography/locationOfOperationSupplyOrProduction/@latitudeAndLongitude",
+    "reference_to_reference_flow": "/processDataSet/processInformation/quantitativeReference/referenceToReferenceFlow/text()",
+        }
+        
+    act_info_list = []
+    for file,etree in etree_dict['processes'].items():
+            act_info = apply_xpaths_to_xml_file(xpaths_activity_info,etree)
+            act_info_list.append(act_info)
+
+    act_param_list = get_param_data(etree_dict)
+
+    for act,params in zip(act_info_list,act_param_list):
+
+        act['parameters'] = params
+
+    return act_info_list
+
+
+def extract(path_to_zip)->list:
+
+    etrees_dict = extract_zip(path_to_zip)
+
+
+    #get product system model if exists
+    if 'lifecyclemodels' in etrees_dict:
+        psm = get_systemmodel(etrees_dict)
+
+    # get contanct data
+    contact_list = get_contact_from_etree(etrees_dict)
+
+    # get unit group data 
+    unit_gr_dict = get_unitdata_from_etree(etree_dict=etrees_dict)
+
+    # get flow properties
+    flow_properties_list = get_flowproperties_from_etree(etrees_dict)
+
+    # combine the flow property and unit data
+    unit_fp_dict = fp_dict(flow_properties=flow_properties_list, ug_dict=unit_gr_dict)
+
+    # extract more info from `flows` folder
+    flow_list = get_flows_from_etree(etrees_dict)
+
+    # general data from activities
+    act_info = get_act_info(etrees_dict)
+
+    # exchange data from activities
+    exchanges_list = get_exchange_data(etrees_dict)
+
+    assert len(exchanges_list) == len(act_info)
+
+    ## combine
+
+    # add flow property and unit to flows
+    for f in flow_list:
+        f['flow property'] = unit_fp_dict[f['refobj']]['flow property']
+        f['unit'] = unit_fp_dict[f['refobj']]['unit']
+        f['unit_multiplier'] = unit_fp_dict[f['refobj']]['unit_multiplier']
+        f['unit_group'] = unit_fp_dict[f['refobj']]['unit_group']
+
+    flow_df = pd.DataFrame(flow_list)
+
+    activity_info_list = []
+    for act,exchanges in zip(act_info,exchanges_list):
+
+        # put flow data into the exchanges (lazy approach using pandas)
+        exchanges_df = pd.DataFrame(exchanges).T.merge(flow_df,
+        left_on='exchanges_uuid',right_on='uuid',how="inner")
+
+        # scale according to bizzare logic
+        exchanges_df['amount'] = exchanges_df['exchanges_resulting_amount']\
+        .map(float) * exchanges_df['value'].map(float)
+
+        act["exchanges"] = exchanges_df.to_dict("records")
+        act["contacts"] = contact_list
+        #act["flow properties"] = flow_properties_list
+        #act['_unit_flow_prop'] = unit_fp_dict # used later for unit conv
+
+        activity_info_list.append(act)
+
+    return activity_info_list    
