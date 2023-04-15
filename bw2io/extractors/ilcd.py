@@ -963,9 +963,8 @@ def extract(path_to_zip)->list:
 
         act["exchanges"] = exchanges_df.to_dict("records")
         act["contacts"] = contact_list
-        act["flow properties"] = flow_properties_list
-
-        act['_unit_flow_prop'] = unit_fp_dict # used later for unit conv
+        #act["flow properties"] = flow_properties_list
+        #act['_unit_flow_prop'] = unit_fp_dict # used later for unit conv
 
         activity_info_list.append(act)
 
