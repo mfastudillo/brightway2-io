@@ -80,7 +80,7 @@ def get_activity_unit(data:list):
     return data
 
 def set_activity_parameters(data:list):
-    """adds the activity parameters as a list dicts
+    """adds the activity parameters as a list dicts [DEPRECATED]
 
     Args:
         data (list): _description_
@@ -265,3 +265,34 @@ def alternative_map_to_biosphere3(data:list,mapping_dict:dict)->list:
 #                 e['code'] = act['code']
 
 #     return data
+
+def remove_clutter(data:list)->list:
+    """remove data only needed for intermediate calculations
+
+    Parameters
+    ----------
+    data : list
+        list of dicts representing activities
+
+    Returns
+    -------
+    list
+        _description_
+    """
+
+    keys_to_pop = ['exchanges_internal_id','value','refobj','unit_multiplier',
+    'exchanges_resulting_amount','unit_group']
+    
+    for ds in data:
+
+        for e in ds['exchanges']:
+
+            for k in keys_to_pop:
+                e.pop(k)
+        
+            # remove None values
+            e = {k:v for k,v in e.items() if v is not None}
+
+    
+    return data
+
