@@ -5,37 +5,6 @@ import pandas as pd
 import logging
 import math
 
-def setdb_and_code(data:list,dbname:str)->list:
-    """
-
-    Args:
-        data (list): _description_
-        dbname (str): _description_
-
-    Returns:
-        list: _description_
-    """
-
-    # not sure if it should be done here...
-    for ds in data:
-        ds['database'] = dbname
-        ds['type']='process' 
-        ds['code'] = ds['uuid']
-
-        # # technosphere flows are assigned by default the dbname and code
-        # for e in ds.get('exchanges'):
-        #     if e['type']=='Product flow':
-        #         e['database'] = ds['database']
-        #         e['code'] = ds['uuid']
-
-
-        #         if e['exchanges_internal_id'] == ds['reference_to_reference_flow']:
-        #             # production flow
-        #             continue
-
-    return data
-
-
 def rename_activity_keys(data:list):
     """renames the 'name' and exchange 'type' keys (e.g Elementary flow to 
     biosphere)"""
@@ -62,76 +31,25 @@ def rename_activity_keys(data:list):
 
     return data
 
-
-def get_activity_unit(data:list):
-    """Sets the unit of the activities. Better if units are already corrected"""
-
-    # in ilcd the unit is in the reference product, that should be identified 
-    # with an internal reference code.
-    unit_found = False
-    for ds in data:
-        for exchange in ds['exchanges']:
-            if exchange.get('exchanges_internal_id') == ds['reference_to_reference_flow']:
-                ds['unit'] = exchange['unit']
-                ds['exchanges_name'] = exchange['exchanges_name']
-                unit_found = True
-                break
-    assert unit_found,'unit of the activity could not be found. Failed strategy'
-    return data
-
-def set_activity_parameters(data:list):
-    """adds the activity parameters as a list dicts [DEPRECATED]
-
-    Args:
-        data (list): _description_
-    """
-    keys = ['parameter_name','parameter_comment','parameter_formula',
-    'parameter_mean_value','parameter_minimum_value','parameter_maximum_value',
-    'parameter_std95','parameter_distrib',
-    ]
-    for ds in data:
-        
-        params = [ds[k] for k in keys]
-
-        # params = [ds['parameter_name'],ds['parameter_comment'],
-        # ds['parameter_formula'],ds['parameter_mean_value'],
-        # ds['parameter_minimum_value'],ds['parameter_maximum_value'],
-        # ds['parameter_std95'],]
-
-        # force it to be a list of list in all cases
-        params = [alist if isinstance(alist,list) else [alist]for alist in params]
-
-        has_params = any(([p is not None for p in params]))
-
-        if has_params:
-            params_reorganised = []
-            for name,comment,formula,mean,minimum,maximum,std,distr, in zip_longest(*params):
-                d = {'name':name,'comment':comment,'formula':formula,'mean':mean,
-                'minimum':minimum,'maximum':maximum,'std':std,'parameter_distrib':distr,  
-                }
-                params_reorganised.append(d)
-            ds['parameters'] = params_reorganised
-
-            # clean the clutter
-            for k in keys:
-                ds.pop(k, None)
-
-    return data
-    
-def set_default_location(data:list):
-    """assigns a default location (GLO) if none is given"""
-    for ds in data:
-
-        ds['location'] = ds.get('location','GLO')
-
-        if ds['location'] is None:
-            ds['location']='GLO'
-
-    return data
-
 def set_production_exchange(data:list)->list:
-    """changes the exchange type to 'production' for the reference flow, and sets
-    the code and database"""
+    """sets the production flow from the list of exchanges.
+
+    Parameters
+    ----------
+    data : list
+        list of datasets. Each one has a key indicating the id of the reference 
+        flow, and one with a list of exchanges. The exchanges whose internal_id
+        is equal to the id of the reference flow is transformed into the 
+        production flow
+
+    Returns
+    -------
+    list
+        _description_
+    """
+
+    # changes the exchange type to 'production' for the reference flow, and sets
+    # the code and database
 
     for ds in data:
         for exchange in ds['exchanges']:
@@ -142,7 +60,8 @@ def set_production_exchange(data:list)->list:
                 exchange['code'] = ds['code']
     return data
 
-def convert_to_default_units(data:list):
+
+def convert_to_default_units(data:list)->list:
     """convert the data to the defaults units used in Brightway. This means 
     scaling the values .. and probably the uncertainty , only in the exchanges.
     The activity unit is picked from the reference flow later.
@@ -209,7 +128,83 @@ def convert_to_default_units(data:list):
 
     return data
 
-def map_to_biosphere3(data:list):
+
+def setdb_and_code(data:list,dbname:str)->list:
+    """
+
+    Args:
+        data (list): _description_
+        dbname (str): _description_
+
+    Returns:
+        list: _description_
+    """
+
+    # not sure if it should be done here...
+    for ds in data:
+        ds['database'] = dbname
+        ds['type']='process' 
+        ds['code'] = ds['uuid']
+
+    return data
+
+def set_activity_unit(data:list)->list:
+    """Sets the unit of the activities. Better if units are already corrected"""
+
+    # in ilcd the unit is in the reference product, that should be identified 
+    # with an internal reference code.
+    unit_found = False
+    for ds in data:
+        for exchange in ds['exchanges']:
+            if exchange.get('exchanges_internal_id') == ds['reference_to_reference_flow']:
+                ds['unit'] = exchange['unit']
+                ds['exchanges_name'] = exchange['exchanges_name']
+                unit_found = True
+                break
+    assert unit_found,'unit of the activity could not be found. Failed strategy'
+    return data
+
+# def set_activity_parameters(data:list)->list:
+#     """adds the activity parameters as a list dicts [DEPRECATED]
+
+#     Args:
+#         data (list): _description_
+#     """
+#     keys = ['parameter_name','parameter_comment','parameter_formula',
+#     'parameter_mean_value','parameter_minimum_value','parameter_maximum_value',
+#     'parameter_std95','parameter_distrib',
+#     ]
+#     for ds in data:
+        
+#         params = [ds[k] for k in keys]
+
+#         # params = [ds['parameter_name'],ds['parameter_comment'],
+#         # ds['parameter_formula'],ds['parameter_mean_value'],
+#         # ds['parameter_minimum_value'],ds['parameter_maximum_value'],
+#         # ds['parameter_std95'],]
+
+#         # force it to be a list of list in all cases
+#         params = [alist if isinstance(alist,list) else [alist]for alist in params]
+
+#         has_params = any(([p is not None for p in params]))
+
+#         if has_params:
+#             params_reorganised = []
+#             for name,comment,formula,mean,minimum,maximum,std,distr, in zip_longest(*params):
+#                 d = {'name':name,'comment':comment,'formula':formula,'mean':mean,
+#                 'minimum':minimum,'maximum':maximum,'std':std,'parameter_distrib':distr,  
+#                 }
+#                 params_reorganised.append(d)
+#             ds['parameters'] = params_reorganised
+
+#             # clean the clutter
+#             for k in keys:
+#                 ds.pop(k, None)
+
+#     return data
+
+
+def map_to_biosphere3(data:list)->list:
     """sets the code and database of biosphere flows tryng to link to the
     biosphere3 database. It uses a mapping between ilcd elementary flows and
     ecoinvent elementary flows."""
@@ -228,6 +223,16 @@ def map_to_biosphere3(data:list):
 
     return data
 
+def set_default_location(data:list)->list:
+    """assigns a default location (GLO) if none is given"""
+    for ds in data:
+
+        ds['location'] = ds.get('location','GLO')
+
+        if ds['location'] is None:
+            ds['location']='GLO'
+
+    return data
 
 def alternative_map_to_biosphere3(data:list,mapping_dict:dict)->list:
     """sets the code and database of biosphere flows using an alternative mapping.
@@ -254,18 +259,6 @@ def alternative_map_to_biosphere3(data:list,mapping_dict:dict)->list:
 
     return data
 
-# def set_production_code_and_database(data:list):
-
-#     for act in data:
-
-#         for e in act['exchanges']:
-
-#             if e['type']=='production':
-#                 e['database'] = act['database']
-#                 e['code'] = act['code']
-
-#     return data
-
 def remove_clutter(data:list)->list:
     """remove data only needed for intermediate calculations
 
@@ -281,9 +274,11 @@ def remove_clutter(data:list)->list:
     """
 
     keys_to_pop = ['exchanges_internal_id','value','refobj','unit_multiplier',
-    'exchanges_resulting_amount','unit_group']
+    'exchanges_resulting_amount','unit_group','flow property description']
     
     for ds in data:
+        
+        ds.pop('reference_to_reference_flow') # only used to find ref flow
 
         for e in ds['exchanges']:
 
