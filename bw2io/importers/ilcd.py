@@ -7,7 +7,7 @@ convert_to_default_units,map_to_biosphere3, set_default_location,
 set_production_exchange,setdb_and_code,remove_clutter)
 from ..strategies.generic import assign_only_product_as_production
 from ..strategies.migrations import migrate_exchanges,migrate_datasets
-
+from ..strategies import link_iterable_by_fields
 
 class ILCDImporter(LCIImporter):
     def __init__(self, dirpath, dbname):
@@ -24,6 +24,14 @@ class ILCDImporter(LCIImporter):
             assign_only_product_as_production,
             map_to_biosphere3,
             set_default_location,
+            # production exchanges
+            functools.partial(link_iterable_by_fields, 
+            **{'kind':'production',
+            'fields':['database','code'],'internal':True}),
+            # internal technosphere
+            functools.partial(link_iterable_by_fields, 
+            **{'kind':'technosphere',
+            'fields':['exchanges_name','unit'],'internal':True}), 
             remove_clutter,
         ]
 
