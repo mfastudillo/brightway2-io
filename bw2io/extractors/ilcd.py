@@ -141,6 +141,7 @@ def xpaths()-> dict:
     "exchanges_amount_min": "/processDataSet/exchanges/exchange/minimumAmount/text()",
     "exchanges_amount_max": "/processDataSet/exchanges/exchange/maximumAmount/text()",
     "exchanges_amount_distrib": "/processDataSet/exchanges/exchange/uncertaintyDistributionType/text()",
+    "exchanges_amount_std95": "/processDataSet/exchanges/exchange/relativeStandardDeviation95In/text()",
 #    "exchanges_param":"/processDataSet/exchanges/exchange/referenceToVariable/text()",
     }
 
@@ -153,6 +154,7 @@ def xpaths()-> dict:
     "exchanges_amount_min": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/minimumAmount/text()",
     "exchanges_amount_max": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/maximumAmount/text()",
     "exchanges_amount_distrib": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/uncertaintyDistributionType/text()",
+    "exchanges_amount_std95": "/processDataSet/exchanges/exchange[@dataSetInternalID={internal_id}]/relativeStandardDeviation95In/text()",
     }
 
     # Xpath for values in flow XML files, will return one values in a list
@@ -474,8 +476,6 @@ def get_contact_from_etree(etree_dict:dict)->list:
     return contact_list
 
 
-
-    
 def get_flows_from_etree(etrees_dict:dict)->list:
     """extracts data from 'flows' folder
 
@@ -627,6 +627,7 @@ def get_exchange_data(etree_dict):
             "exchanges_amount_min":extract_procceses['exchanges_amount_min'],
             "exchanges_amount_max":extract_procceses['exchanges_amount_max'],
             "exchanges_amount_distrib":extract_procceses['exchanges_amount_distrib'],
+            "exchanges_amount_rStd":extract_procceses['exchanges_amount_std95'],
             'exchanges_internal_id':internal_id,
 
             }
