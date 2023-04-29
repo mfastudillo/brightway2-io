@@ -4,6 +4,7 @@ from itertools import zip_longest
 import pandas as pd
 import logging
 import math
+import numpy as np
 
 def rename_activity_keys(data:list):
     """renames the 'name' and exchange 'type' keys (e.g Elementary flow to 
@@ -256,6 +257,63 @@ def alternative_map_to_biosphere3(data:list,mapping_dict:dict)->list:
                 except KeyError:
                     # this is going to be unlinked
                     continue
+
+    return data
+
+def transform_uncertainty(data:list)->list:
+    """expressses the uncertainty of exchanges in the format expected by brightway
+
+    Parameters
+    ----------
+    data : list
+        _description_
+
+    Returns
+    -------
+    list
+        _description_
+    """
+    # from ilcd name to stat_arrays id
+    uncertainty_types = {
+     None:0,
+    'undefined':0,
+    'log-normal':2,
+    'normal':3,
+    'triangular':5,
+    'uniform':4,
+    }
+    
+    # from relative standard deviation to loc
+    # for lognormals the square of the SD is recorded
+
+    for ds in data:
+
+        for e in ds['exchanges']:
+
+            e['uncertainty type'] = int(uncertainty_types[e['exchanges_amount_distrib']])
+            e['loc'] = e['amount'] # to be confirmed
+
+            e['minimum'] = (e['exchanges_amount_min'] if 
+                            e['exchanges_amount_min'] is not None else np.nan)
+            e['maximum'] = (e['exchanges_amount_max'] 
+                            if e['exchanges_amount_max'] is not None else np.nan)
+            
+            # scale scale parameter
+            scale_transf = {
+            3:lambda x:0.5*x,
+            2:lambda x:np.log(np.sqrt(x))* e['loc'] if x!=0 else np.nan,
+            0:lambda x:np.nan,
+            }
+
+            scale_f = scale_transf.get(e['uncertainty type'],np.nan)
+            
+            e['scale'] = scale_f(e['exchanges_amount_rStd'] )
+            
+            # clean
+            e.pop('exchanges_amount_distrib')
+            e.pop('exchanges_amount_min')
+            e.pop('exchanges_amount_max')
+            e.pop('exchanges_amount_rStd')
 
     return data
 

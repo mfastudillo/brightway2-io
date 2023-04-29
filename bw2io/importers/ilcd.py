@@ -4,7 +4,7 @@ from .base_lci import LCIImporter
 from ..extractors.ilcd import ILCDExtractor
 from ..strategies.ilcd import (rename_activity_keys, set_activity_unit,
 convert_to_default_units,map_to_biosphere3, set_default_location,
-set_production_exchange,setdb_and_code,remove_clutter)
+set_production_exchange,setdb_and_code,remove_clutter,transform_uncertainty)
 from ..strategies.generic import assign_only_product_as_production
 from ..strategies.migrations import migrate_exchanges,migrate_datasets
 from ..strategies import link_iterable_by_fields
@@ -24,6 +24,7 @@ class ILCDImporter(LCIImporter):
             assign_only_product_as_production,
             map_to_biosphere3,
             set_default_location,
+            transform_uncertainty, 
             # production exchanges
             functools.partial(link_iterable_by_fields, 
             **{'kind':'production',
