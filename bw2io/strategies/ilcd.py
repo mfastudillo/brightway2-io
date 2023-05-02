@@ -165,45 +165,6 @@ def set_activity_unit(data:list)->list:
     assert unit_found,'unit of the activity could not be found. Failed strategy'
     return data
 
-# def set_activity_parameters(data:list)->list:
-#     """adds the activity parameters as a list dicts [DEPRECATED]
-
-#     Args:
-#         data (list): _description_
-#     """
-#     keys = ['parameter_name','parameter_comment','parameter_formula',
-#     'parameter_mean_value','parameter_minimum_value','parameter_maximum_value',
-#     'parameter_std95','parameter_distrib',
-#     ]
-#     for ds in data:
-        
-#         params = [ds[k] for k in keys]
-
-#         # params = [ds['parameter_name'],ds['parameter_comment'],
-#         # ds['parameter_formula'],ds['parameter_mean_value'],
-#         # ds['parameter_minimum_value'],ds['parameter_maximum_value'],
-#         # ds['parameter_std95'],]
-
-#         # force it to be a list of list in all cases
-#         params = [alist if isinstance(alist,list) else [alist]for alist in params]
-
-#         has_params = any(([p is not None for p in params]))
-
-#         if has_params:
-#             params_reorganised = []
-#             for name,comment,formula,mean,minimum,maximum,std,distr, in zip_longest(*params):
-#                 d = {'name':name,'comment':comment,'formula':formula,'mean':mean,
-#                 'minimum':minimum,'maximum':maximum,'std':std,'parameter_distrib':distr,  
-#                 }
-#                 params_reorganised.append(d)
-#             ds['parameters'] = params_reorganised
-
-#             # clean the clutter
-#             for k in keys:
-#                 ds.pop(k, None)
-
-#     return data
-
 
 def map_to_biosphere3(data:list)->list:
     """sets the code and database of biosphere flows tryng to link to the
@@ -260,6 +221,42 @@ def alternative_map_to_biosphere3(data:list,mapping_dict:dict)->list:
 
     return data
 
+
+def set_connexions_based_on_psm(data:list)->list:
+
+    t_flows = {}
+    for ds in data:
+        
+
+        # fix connexion dicts
+        if ds['connexions'] is None:
+            ds['connexions'] = {'upstream':[],'downstream':[]}
+        else:
+            # replace None by empty lists
+            ds['connexions'] = { k:(v if v is not None else []) for k, v in 
+                                ds['connexions'].items() }
+            
+            ds['connexions'] = { k:(v if isinstance(v,list) else [v]) for k, v 
+                                in ds['connexions'].items() }
+
+
+        # collect the upstream and downstream connexions
+        for downs in ds['connexions']['downstream']:
+            t_flows[downs]= (ds['database'],ds['uuid'])
+
+        for ups in ds['connexions']['upstream']:
+            t_flows[ups]= (ds['database'],ds['uuid'])
+            
+    for ds in data:
+
+        for exc in ds['exchanges']:
+
+            if exc['type']=='technosphere' and exc['uuid'] in t_flows:
+                exc['input'] = t_flows[exc['uuid']]
+
+    return data
+        
+
 def transform_uncertainty(data:list)->list:
     """expressses the uncertainty of exchanges in the format expected by brightway
 
@@ -286,24 +283,26 @@ def transform_uncertainty(data:list)->list:
     # from relative standard deviation to loc
     # for lognormals the square of the SD is recorded
 
+    # scale the scale parameter
+    scale_transf = {
+    3:lambda x:0.5*x, # when normal x is 2 SD
+    2:lambda x:(np.log(x))/2 if x!=0 else np.nan, # when lognormal x is GSD**2
+    0:lambda x:np.nan,
+    }
+
     for ds in data:
 
         for e in ds['exchanges']:
 
             e['uncertainty type'] = int(uncertainty_types[e['exchanges_amount_distrib']])
-            e['loc'] = e['amount'] # to be confirmed
+            e['loc'] = e['amount'] # the mean... 
 
             e['minimum'] = (e['exchanges_amount_min'] if 
                             e['exchanges_amount_min'] is not None else np.nan)
             e['maximum'] = (e['exchanges_amount_max'] 
                             if e['exchanges_amount_max'] is not None else np.nan)
             
-            # scale scale parameter
-            scale_transf = {
-            3:lambda x:0.5*x,
-            2:lambda x:np.log(np.sqrt(x))* e['loc'] if x!=0 else np.nan,
-            0:lambda x:np.nan,
-            }
+
 
             scale_f = scale_transf.get(e['uncertainty type'],np.nan)
             
