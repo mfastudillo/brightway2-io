@@ -4,11 +4,9 @@ import pytest
 from ilcd_fixtures import example_path
 from lxml.etree import _Element
 
-from bw2io.extractors.ilcd import (apply_xpaths_to_xml_file,
-                                   extract_all_relevant_info, extract_zip,
-                                   get_contact_from_etree,
-                                   get_flows_from_etree, get_xml_value,
-                                   namespaces_dict, xpaths,extract)
+from bw2io.extractors.ilcd import (apply_xpaths_to_xml_file,extract_zip,
+get_contact_from_etree,get_flows_from_etree, get_xml_value,namespaces_dict,
+xpaths,extract)
 
 
 # fixtures
@@ -72,7 +70,7 @@ def test_extract_zip(example_path):
 def test_xml_value_getter(example_path):
 
     xpaths_dict = xpaths()
-    xpaths_process = xpaths_dict['xpaths_process']
+    xpaths_process = xpaths_dict['xpaths_activity_info']
     namespaces = namespaces_dict()
 
     trees = extract_zip(example_path)
@@ -87,7 +85,7 @@ def test_xml_value_getter(example_path):
     assert v == 'Light duty vehicle',v
 
 def test_extract(example_path):
-
+    """tests that the stuff that is needed in the strategies is there"""
     data = extract(example_path)
 
     for ds in data:
