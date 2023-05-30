@@ -9,7 +9,7 @@ REQUIREMENTS = [
     "mrio_common_metadata",
     "numpy",
     "openpyxl",
-    "psutil",
+    "platformdirs",
     "pyprind",
     "requests",
     "scipy",
