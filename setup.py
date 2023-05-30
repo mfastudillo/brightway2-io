@@ -19,6 +19,7 @@ REQUIREMENTS = [
     "voluptuous",
     "xlrd",
     "xlsxwriter",
+    "pandas",
 ]
 
 v_temp = {}
