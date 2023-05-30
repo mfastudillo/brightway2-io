@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 
-
 @pytest.fixture
 def example_path():
 
@@ -11,5 +10,3 @@ def example_path():
     / "bw2io/data/examples/ilcd_example.zip")
 
     return example_file_path
-
-
