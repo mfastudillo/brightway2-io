@@ -221,12 +221,25 @@ def alternative_map_to_biosphere3(data:list,mapping_dict:dict)->list:
 
     return data
 
+def reformat_connexions(data:list):
+    """reformat the connexions in a common format
 
-def set_connexions_based_on_psm(data:list)->list:
+    Parameters
+    ----------
+    data : list
+        _description_
 
-    t_flows = {}
+    Returns
+    -------
+    _type_
+        _description_
+    """
     for ds in data:
         
+        if 'connexions' not in ds:
+            # if the ilcd does not come with data on product system we skip the
+            # whole thing
+            continue
 
         # fix connexion dicts
         if ds['connexions'] is None:
@@ -238,21 +251,51 @@ def set_connexions_based_on_psm(data:list)->list:
             
             ds['connexions'] = { k:(v if isinstance(v,list) else [v]) for k, v 
                                 in ds['connexions'].items() }
+            
+    return data
 
 
-        # collect the upstream and downstream connexions
+def set_connexions_based_on_psm(data:list)->list:
+    """If provided, uses data from the ilcd file to set up the product system
+    model as intented 
+
+    Parameters
+    ----------
+    data : list
+        _description_
+
+    Returns
+    -------
+    list
+        _description_
+    """
+    t_flows = {}
+    for ds in data:
+        
+        if 'connexions' not in ds:
+            # if the ilcd does not come with data on product system we skip the
+            # whole thing
+            continue
+
+
+        # collect the upstream and downstream connexions (keys exchanges uuids
+        # values database keys)
         for downs in ds['connexions']['downstream']:
             t_flows[downs]= (ds['database'],ds['uuid'])
 
         for ups in ds['connexions']['upstream']:
             t_flows[ups]= (ds['database'],ds['uuid'])
-            
+    
+    # loop through all technosphere flows, and if the exchange uuid is in the dictionary of
+    # connexions, we set the input of that exchange to the connexion.
     for ds in data:
 
         for exc in ds['exchanges']:
 
             if exc['type']=='technosphere' and exc['uuid'] in t_flows:
                 exc['input'] = t_flows[exc['uuid']]
+            else:
+                continue
 
     return data
         
