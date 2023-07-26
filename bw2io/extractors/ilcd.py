@@ -220,6 +220,13 @@ def xpaths() -> dict:
 
 
 def namespaces_dict() -> dict:
+    """returns a dict with namespaces
+
+    Returns
+    -------
+    dict
+        _description_
+    """
     # Namespaces to use with the XPath (from files under xmlns)
     namespaces = {
         "default_process_ns": {"pns": "http://lca.jrc.it/ILCD/Process"},
@@ -345,7 +352,7 @@ def get_xml_value(xml_tree, xpath_str, default_ns, namespaces) -> dict:
             xpath_segments[i] = namespace_abbrevation + ":" + xpath_segments[i]
     xpath_str = "/".join(xpath_segments)
     r = xml_tree.xpath(xpath_str, namespaces=namespaces)
-    # assert len(r) <= 1, "Unexpected results from XML parsing: " + xpath_str + ", " + str(len(r))
+
     if len(r) == 0:
         return None
     if len(r) == 1:
@@ -400,7 +407,7 @@ def get_unitdata_from_etree(etree_dict: dict) -> dict:
 
 
 def get_systemmodel(etree_dict: dict) -> dict:
-    """_summary_
+    """gets data from the system model. Only run if present
 
     Parameters
     ----------
