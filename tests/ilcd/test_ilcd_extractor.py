@@ -64,6 +64,8 @@ def test_extract_zip(example_path):
     assert "contacts" in trees
     assert "flows" in trees
     assert "processes" in trees
+    assert "flowproperties" in trees
+    assert "unitgroups" in trees
 
     # assure that all return values are etrees
     for branches in trees:
