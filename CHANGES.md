@@ -1,6 +1,19 @@
 # io Changelog
 
+### 0.9.DEV21 (2023-08-12)
+
+* #138: Fixed import of SimaPro process with multiple literature refs
+
+### 0.9.DEV20 (2023-08-12)
+
+* #204: Fix unsupported operand
+* #136: Import invalid ecospold1 XML data
+* #167: field equality strategy and default location strategy
+* Purge pyprind in place of tqdm
+
 ### 0.9.DEV19 (2023-06-08)
+
+** Note: This release has be withdrawn, as has bw2data 4.0.DEV19!**
 
 * Fix compatibility with bw2data 4.0.DEV19
 
