@@ -36,7 +36,7 @@ class ILCDImporter(LCIImporter):
             set_default_location,
             transform_uncertainty,
             reformat_connexions,
-            # set_connexions_based_on_psm ,
+            set_connexions_based_on_psm ,
             # production exchanges
             functools.partial(
                 link_iterable_by_fields,
