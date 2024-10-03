@@ -2,7 +2,7 @@ import re
 import zipfile
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import bw2data as bd
 import ecoinvent_interface as ei
@@ -10,10 +10,7 @@ from ecoinvent_interface.core import SYSTEM_MODELS
 from ecoinvent_interface.string_distance import damerau_levenshtein
 
 from .extractors import ExcelExtractor
-from .importers import (
-    Ecospold2BiosphereImporter,
-    SingleOutputEcospold2Importer,
-)
+from .importers import Ecospold2BiosphereImporter, SingleOutputEcospold2Importer
 
 
 def get_excel_sheet_names(file_path: Path) -> list[str]:
@@ -55,13 +52,14 @@ def pick_a_unit_label_already(obj: dict) -> str:
 def import_ecoinvent_release(
     version: str,
     system_model: str,
-    username: str | None = None,
-    password: str | None = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
     lci: bool = True,
     lcia: bool = True,
-    biosphere_name: str | None = None,
+    biosphere_name: Optional[str] = None,
     biosphere_write_mode: str = "patch",
     importer_signal: Any = None,
+    namespace_lcia_methods: bool = True,
 ) -> None:
     """
     Import an ecoinvent LCI and/or LCIA release.
@@ -112,6 +110,10 @@ def import_ecoinvent_release(
         How to handle an existing biosphere database. Must be either `replace` or `patch`
     importer_signal
         Used by the Activity Browser to provide feedback during the import
+    namespace_lcia_methods
+        Add ecoinvent version as a prefix to LCIA impact categories, e.g.
+        `("ecoinvent-3.9.1", "global warming")`. Helps clarify the version intended for use, and
+        allows for multiple LCIA implementation versions to be installed in parallel
 
     Examples
     --------
@@ -182,12 +184,12 @@ def import_ecoinvent_release(
         raise ValueError("Can't determine ecoinvent username or password")
 
     release = ei.EcoinventRelease(settings)
-    if not version in release.list_versions():
+    if version not in release.list_versions():
         raise ValueError(f"Invalid version {version}")
 
     if system_model in SYSTEM_MODELS:
         system_model = SYSTEM_MODELS[system_model]
-    if not system_model in release.list_system_models(version):
+    if system_model not in release.list_system_models(version):
         raise ValueError(f"Invalid system model {system_model}")
 
     if biosphere_name is None:
@@ -225,11 +227,15 @@ def import_ecoinvent_release(
             existing = {flow["code"] for flow in bd.Database(biosphere_name)}
             new = [flow for flow in eb.data if flow["code"] not in existing]
             if new:
-                new_list = "\n\t".join(["{}: {}".format(o['name'], o['categories']) for o in new])
-                print(f"Adding {len(new)} biosphere flows to {biosphere_name}:\n\t{new_list}")
+                new_list = "\n\t".join(
+                    ["{}: {}".format(o["name"], o["categories"]) for o in new]
+                )
+                print(
+                    f"Adding {len(new)} biosphere flows to {biosphere_name}:\n\t{new_list}"
+                )
                 for flow in new:
                     if "database" in flow:
-                        del flow['database']
+                        del flow["database"]
                     bd.Database(biosphere_name).new_activity(**flow).save()
 
         bd.preferences["biosphere_database"] = biosphere_name
@@ -288,10 +294,21 @@ def import_ecoinvent_release(
         }
         cf_col_label = CF_COLUMN_LABELS.get(version, "cf")
         units_col_label = pick_a_unit_label_already(units[0])
-        units_mapping = {
-            (row["method"], row["category"], row["indicator"]): row[units_col_label]
-            for row in units
-        }
+        if namespace_lcia_methods:
+            units_mapping = {
+                (
+                    f"ecoinvent-{version}",
+                    row["method"],
+                    row["category"],
+                    row["indicator"],
+                ): row[units_col_label]
+                for row in units
+            }
+        else:
+            units_mapping = {
+                (row["method"], row["category"], row["indicator"]): row[units_col_label]
+                for row in units
+            }
 
         biosphere_mapping = {}
         for flow in bd.Database(biosphere_name):
@@ -307,7 +324,15 @@ def import_ecoinvent_release(
         substituted = set()
 
         for row in cfs:
-            impact_category = (row["method"], row["category"], row["indicator"])
+            if namespace_lcia_methods:
+                impact_category = (
+                    f"ecoinvent-{version}",
+                    row["method"],
+                    row["category"],
+                    row["indicator"],
+                )
+            else:
+                impact_category = (row["method"], row["category"], row["indicator"])
             if row[cf_col_label] is None:
                 continue
             try:

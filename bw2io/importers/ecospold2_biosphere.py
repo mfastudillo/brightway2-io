@@ -1,6 +1,7 @@
-from pathlib import Path
 import json
 import os
+from pathlib import Path
+from typing import Optional
 
 from bw2data.utils import recursive_str_to_unicode
 from lxml import objectify
@@ -11,7 +12,6 @@ from ..strategies import (
     normalize_units,
 )
 from .base_lci import LCIImporter
-
 
 EMISSIONS_CATEGORIES = {
     "air": "emission",
@@ -47,7 +47,7 @@ class Ecospold2BiosphereImporter(LCIImporter):
         self,
         name: str = "biosphere3",
         version: str = "3.9",
-        filepath: Path | None = None,
+        filepath: Optional[Path] = None,
     ):
         """
         Initialize the importer.
@@ -67,7 +67,7 @@ class Ecospold2BiosphereImporter(LCIImporter):
             ensure_categories_are_tuples,
         ]
 
-    def extract(self, version: str | None, filepath: Path | None):
+    def extract(self, version: Optional[str] = None, filepath: Optional[Path] = None):
         """
         Extract elementary flows from the xml file.
 
