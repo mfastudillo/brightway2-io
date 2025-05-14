@@ -12,7 +12,7 @@ def test_extraction_without_synonyms():
         "ei",
     )
     expected = {
-        "comment": "Things and stuff and whatnot\nTechnology:  typical technology for ze Germans!",
+        "comment": "Things and stuff and whatnot\nIncluded activities start:  Includes start stuff\nIncluded activities end:  Includes end stuff\nTechnology:  typical technology for ze Germans!",
         "classifications": [
             ("EcoSpold01Categories", "construction materials/concrete"),
             (
@@ -29,7 +29,8 @@ def test_extraction_without_synonyms():
                 "type": "technosphere",
                 "name": "clay pit infrastructure",
                 "classifications": {
-                    "CPC": ["53269: Other constructions for manufacturing"]
+                    "By-product classification": "allocatable product",
+                    "CPC": "53269: Other constructions for manufacturing",
                 },
                 "production volume": 0.0,
                 "properties": {},
@@ -54,7 +55,8 @@ def test_extraction_without_synonyms():
                 "type": "production",
                 "name": "concrete block",
                 "classifications": {
-                    "CPC": ["37510: Non-refractory mortars and concretes"]
+                    "By-product classification": "allocatable product",
+                    "CPC": "37510: Non-refractory mortars and concretes",
                 },
                 "production volume": 42.0,
                 "properties": {
@@ -80,10 +82,11 @@ def test_extraction_without_synonyms():
                 "flow": "075e433b-4be4-448e-9510-9a5029c1ce94",
                 "type": "biosphere",
                 "chemical formula": "h2o2",
-                'formula': 'does_it_hurt_when_dropped_on_foot * 2',
+                "formula": "does_it_hurt_when_dropped_on_foot * 2",
+                "CAS number": "7732-18-5",
                 "variable name": "it_is_boring_to_do_this_manually",
                 "name": "Water",
-                "classifications": {"CPC": []},
+                "classifications": {},
                 "production volume": 0.0,
                 "properties": {
                     "water in wet mass": {
@@ -148,7 +151,7 @@ def test_extraction_with_synonyms():
         "ei",
     )
     expected = {
-        "comment": "Things and stuff and whatnot\nTechnology:  typical technology for ze Germans!",
+        "comment": "Things and stuff and whatnot\nIncluded activities end:  Includes some stuff\nTechnology:  typical technology for ze Germans!",
         "classifications": [
             ("EcoSpold01Categories", "construction materials/concrete"),
             (
@@ -165,7 +168,8 @@ def test_extraction_with_synonyms():
                 "type": "technosphere",
                 "name": "clay pit infrastructure",
                 "classifications": {
-                    "CPC": ["53269: Other constructions for manufacturing"]
+                    "By-product classification": "allocatable product",
+                    "CPC": "53269: Other constructions for manufacturing",
                 },
                 "production volume": 0.0,
                 "properties": {},
@@ -190,7 +194,8 @@ def test_extraction_with_synonyms():
                 "type": "production",
                 "name": "concrete block",
                 "classifications": {
-                    "CPC": ["37510: Non-refractory mortars and concretes"]
+                    "By-product classification": "allocatable product",
+                    "CPC": "37510: Non-refractory mortars and concretes",
                 },
                 "production volume": 42.0,
                 "properties": {
@@ -218,8 +223,9 @@ def test_extraction_with_synonyms():
                 "name": "Water",
                 "chemical formula": "h2o2",
                 "formula": "does_it_hurt_when_dropped_on_foot * 2",
+                "CAS number": "7732-18-5",
+                "classifications": {},
                 "variable name": "it_is_boring_to_do_this_manually",
-                "classifications": {"CPC": []},
                 "production volume": 0.0,
                 "properties": {
                     "water in wet mass": {

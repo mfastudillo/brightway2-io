@@ -1,4 +1,133 @@
-# io Changelog
+# `bw2io` Changelog
+
+## 0.9.3 (2024-12-05)
+
+* Add ability to use in-memory `Randonneur` datapackages, e.g. loaded from the Excel template
+
+## 0.9.2 (2024-12-02)
+
+* Remove `multifunctional` and `bw_simapro_csv` as dependencies - add install variant `bw2io[multifunctional]`
+
+## 0.9.1 (2024-12-02)
+
+* Fix product information ecospold2 extraction with invalid inputs
+
+## 0.9 (2024-11-27)
+
+* Allow separate products for SimaPro block CSV importer
+* Add more filter options to `link_iterable_by_fields`
+* Make printed importer statistics better
+* [#284 Add `ecospold2` product information from `MasterData/IntermediateExchanges.xml`](https://github.com/brightway-lca/brightway2-io/issues/284)
+* [#282 Exchange Extractor for Ecospold2 only extracts CPC classification](https://github.com/brightway-lca/brightway2-io/issues/282)
+* [#272 Clear Parameters as part of `overwrite=True`](https://github.com/brightway-lca/brightway2-io/pulls/272)
+
+### 0.9.DEV41 (2024-10-15)
+
+* Also convert `market group for electricity` to `kWh`
+
+### 0.9.DEV40 (2024-10-14)
+
+* Add `split_simapro_name_geo_curly_brackets` strategy
+* Add `remove_biosphere_location_prefix_if_flow_in_same_location` strategy
+
+### 0.9.DEV39 (2024-10-13)
+
+* Add `create_products_as_new_nodes` strategy
+* Add additional configuration options for `randonneur`
+* Update tests for recent `bw2data` changes
+* Updates for vocab.sentier.dev units URL change
+
+### 0.9.DEV38 (2024-09-12)
+
+* Fix #274: correctly set units for namespaced methods when importing ecoinvent with ecoinvent_interface
+
+### 0.9.DEV37 (2024-09-04)
+
+* Fix out of order but with `create_randonneur_excel_template_for_unlinked`
+
+### 0.9.DEV36 (2024-09-04)
+
+* Add `create_randonneur_excel_template_for_unlinked`
+
+### 0.9.DEV35 (2024-09-02)
+
+* Add method to directly apply `randonneur` transformations
+* Add `create_new_database_for_flows_with_missing_top_level_context` method
+* Add `normalize_simapro_labels_to_brightway_standard` method
+* Add `match_against_top_level_context` function
+* Add `match_against_only_available_in_given_context_tree` method
+* Add `create_regionalized_biosphere_proxies` method
+* Allow `add_extra_attributes`
+
+### 0.9.DEV34 (2024-08-21)
+
+* Restore Py 3.9 compatibility
+
+### 0.9.DEV33 (2024-08-15)
+
+* Packaging fix
+
+### 0.9.DEV32 (2024-08-15)
+
+* Add `SimaProUnitConverter` which uses `https://vocab.sentier.dev/` for unit conversion and harmonization
+* Improved robustness of `rescale_exchange`
+* Fixed bug with SimaPro name-location strings with spaces inside
+
+### 0.9.DEV31 (2024-08-14)
+
+* Improved statistics reporting for importers
+
+### 0.9.DEV30 (2024-07-23)
+
+* Change default to namespace LCIA methods in ecoinvent imports
+
+### 0.9.DEV29 (2024-07-09)
+
+* Restore Python 3.9 compatibility
+* Compatibility with SimaPro multifunctionality via `bw_simapro_csv` and `multifunctional`.
+
+### 0.9.DEV28 (2024-06-21)
+
+* Allow imports of some invalid ecospold1 files
+* Fix fetching of remote data catalogues in `remote`
+
+### 0.9.DEV27 (2024-05-07)
+
+* [#256 Change to new packaging template](https://github.com/brightway-lca/brightway2-io/pull/256)
+* [#253 Complete ecospold1 import and export](https://github.com/brightway-lca/brightway2-io/pull/253)
+* [#252 Water lake and missing geodata](https://github.com/brightway-lca/brightway2-io/pull/252)
+* [#251 Added missing localized water flow](https://github.com/brightway-lca/brightway2-io/pull/251)
+* [#237 Add CAS numbers](https://github.com/brightway-lca/brightway2-io/pull/237)
+* [#235 add flexibility to `backup_project_directory()`](https://github.com/brightway-lca/brightway2-io/pull/235)
+* [#217 Missing attribute during import](https://github.com/brightway-lca/brightway2-io/pull/217)
+* [#216 Ensure categories are tuple](https://github.com/brightway-lca/brightway2-io/pull/216)
+* Add extractor for SimaPro LCIA 9.5 Project CSV files
+
+### 0.9.DEV26 (2023-11-12)
+
+* Change `import_ecoinvent_release` to allow patching existing biosphere databases
+
+### 0.9.DEV25 (2023-11-10)
+
+* Fix missing import from dev24
+* Some documentation improvements
+
+### 0.9.DEV24 (2023-11-09)
+
+* [#227 Add `import_ecoinvent_release` utility](https://github.com/brightway-lca/brightway2-io/pull/227)
+* [#222 Move `KEYS` variable to function header](https://github.com/brightway-lca/brightway2-io/pull/222)
+* [#219 Don't apply set_`biosphere_type` twice](https://github.com/brightway-lca/brightway2-io/pull/219)
+
+### 0.9.DEV23 (2023-09-17)
+
+* Use bw2data for cache filepath
+* Bunch of small issue fixes
+* [#207 Fixed float parsing errors](https://github.com/brightway-lca/brightway2-io/pull/207)
+* [#213 Reparametrize lognormals for ecospold2 imports](https://github.com/brightway-lca/brightway2-io/pull/213)
+
+### 0.9.DEV22 (2023-09-15)
+
+* Pinned dependencies to fix environment problems
 
 ### 0.9.DEV21 (2023-08-12)
 
