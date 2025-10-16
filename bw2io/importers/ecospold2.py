@@ -4,6 +4,7 @@ from time import time
 from typing import Any, Optional
 
 from bw2data import Database, config
+from bw2data.logs import stdout_feedback_logger
 
 from ..errors import MultiprocessingError
 from ..extractors import Ecospold2DataExtractor
@@ -28,6 +29,7 @@ from ..strategies import (
     remove_zero_amount_coproducts,
     remove_zero_amount_inputs_with_no_activity,
     reparametrize_lognormal_to_agree_with_static_amount,
+    separate_processes_from_products,
     set_lognormal_loc_value,
     update_ecoinvent_locations,
     update_social_flows_in_older_consequential,
@@ -57,6 +59,8 @@ class SingleOutputEcospold2Importer(LCIImporter):
         use_mp: bool = True,
         signal: Any = None,
         reparametrize_lognormals: bool = False,
+        add_product_information: bool = True,
+        separate_products: bool = False,
     ):
         """
         Initializes the SingleOutputEcospold2Importer class instance.
@@ -79,12 +83,17 @@ class SingleOutputEcospold2Importer(LCIImporter):
             Flag to indicate if lognormal distributions for exchanges should be reparametrized
             such that the mean value of the resulting distribution meets the amount
             defined for the exchange.
+        add_product_information: bool
+            Add the `productInformation` text from `MasterData/IntermediateExchanges.xml` to
+            `product_information`.
+        separate_products: bool
+            Import processes and products as separate nodes in the supply chain graph.
         """
 
-        self.dirpath = dirpath
+        self.dirpath = Path(dirpath)
 
-        if not Path(dirpath).is_dir():
-            raise ValueError(f"`dirpath` value was not a directory: {dirpath}")
+        if not self.dirpath.is_dir():
+            raise ValueError(f"`dirpath` value was not a directory: {self.dirpath}")
 
         self.db_name = db_name
         self.signal = signal
@@ -123,15 +132,33 @@ class SingleOutputEcospold2Importer(LCIImporter):
         else:
             self.strategies.append(set_lognormal_loc_value)
 
+        if separate_products:
+            self.strategies.append(separate_processes_from_products)
+
         start = time()
         try:
-            self.data = extractor.extract(dirpath, db_name, use_mp=use_mp)
+            self.data = extractor.extract(self.dirpath, db_name, use_mp=use_mp)
         except RuntimeError as e:
             raise MultiprocessingError(
                 "Multiprocessing error; re-run using `use_mp=False`"
             ).with_traceback(e.__traceback__)
-        print(
+        stdout_feedback_logger.info(
             "Extracted {} datasets in {:.2f} seconds".format(
                 len(self.data), time() - start
             )
         )
+        if add_product_information:
+            tm_dirpath = self.dirpath.parent / "MasterData"
+            if not tm_dirpath.is_dir():
+                stdout_feedback_logger.warning(
+                    "Skipping product information as `MasterData` directory not found"
+                )
+            else:
+                technosphere_metadata = {
+                    obj["id"]: obj["product_information"]
+                    for obj in extractor.extract_technosphere_metadata(tm_dirpath)
+                }
+                for ds in self.data:
+                    ds["product_information"] = technosphere_metadata[
+                        ds["filename"].replace(".spold", "").split("_")[1]
+                    ]

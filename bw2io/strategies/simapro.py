@@ -16,7 +16,6 @@ from .locations import GEO_UPDATE
 
 # Pattern for SimaPro munging of ecoinvent names
 detoxify_pattern = "^(?P<name>.+?)/(?P<geo>[A-Za-z]{2,10})(/I)? [SU]$"
-detoxify_re = re.compile(detoxify_pattern)
 
 
 def functional(exc: dict) -> bool:
@@ -347,7 +346,7 @@ def link_technosphere_based_on_name_unit_location(db, external_db_name=None):
     )
 
 
-def split_simapro_name_geo(db):
+def split_simapro_name_geo(db, regex_string=detoxify_pattern):
     """
     Split a name like 'foo/CH U' into name and geo components in a dataset.
 
@@ -359,6 +358,9 @@ def split_simapro_name_geo(db):
     ----------
     db : list
         A list of dictionaries representing datasets with names to be split.
+
+    regex_string : str
+        A regex pattern to split names. Defaults to a routine to split ecoinvent names.
 
     Returns
     -------
@@ -387,6 +389,7 @@ def split_simapro_name_geo(db):
         },
     ]
     """
+    detoxify_re = re.compile(regex_string)
     for ds in db:
         match = detoxify_re.match(ds["name"])
         if match:
@@ -404,7 +407,9 @@ def split_simapro_name_geo(db):
     return db
 
 
-def split_simapro_name_geo_curly_brackets(db: List[dict], suffix: str = "") -> List[dict]:
+def split_simapro_name_geo_curly_brackets(
+    db: List[dict], suffix: str = ""
+) -> List[dict]:
     """
     Split a name like 'Wheat straw, at farm {NL} Energy, U' into name and geo components in a dataset.
 
@@ -452,7 +457,9 @@ def split_simapro_name_geo_curly_brackets(db: List[dict], suffix: str = "") -> L
     """
     if not suffix:
         suffix = ""
-    curly_fries = re.compile("^(?P<name>.+?)\\s?\\{(?P<geo>.+?)\\}\\s?" + suffix + "\\s?$")
+    curly_fries = re.compile(
+        "^(?P<name>.+?)\\s?\\{(?P<geo>.+?)\\}\\s?" + suffix + "\\s?$"
+    )
 
     for ds in db:
         if match := curly_fries.match(ds["name"]):
@@ -472,20 +479,26 @@ def split_simapro_name_geo_curly_brackets(db: List[dict], suffix: str = "") -> L
     return db
 
 
-def remove_biosphere_location_prefix_if_flow_in_same_location(db: List[dict]) -> List[dict]:
+def remove_biosphere_location_prefix_if_flow_in_same_location(
+    db: List[dict],
+) -> List[dict]:
     """If a biosphere flow is SimaPro-regionalized, like 'Ammonia, AR', and the process location is
     'AR", then remove that suffix."""
     for ds in db:
-        if not isinstance(ds.get('location'), str):
+        if not isinstance(ds.get("location"), str):
             continue
-        finder = re.compile(f"(?P<name>.+?)[\\,/]* (?P<location>{re.escape(ds['location'])})\\s?$")
-        for exc in filter(lambda x: x.get("type") == "biosphere", ds['exchanges']):
-            if match := finder.match(exc['name']):
+        finder = re.compile(
+            f"(?P<name>.+?)[\\,/]* (?P<location>{re.escape(ds['location'])})\\s?$"
+        )
+        for exc in filter(
+            lambda x: x.get("type") == "biosphere", ds.get("exchanges", [])
+        ):
+            if match := finder.match(exc["name"]):
                 gd = match.groupdict()
-                if gd['location'].strip() == ds['location']:
-                    if 'simapro name' not in exc:
-                        exc['simapro name'] = exc['name']
-                    exc['name'] = gd['name'].strip()
+                if gd["location"].strip() == ds["location"]:
+                    if "simapro name" not in exc:
+                        exc["simapro name"] = exc["name"]
+                    exc["name"] = gd["name"].strip()
     return db
 
 
@@ -731,7 +744,9 @@ def change_electricity_unit_mj_to_kwh(db):
             if (
                 exc.get("name", "").lower().startswith("electricity")
                 or exc.get("name", "").lower().startswith("market for electricity")
-                or exc.get("name", "").lower().startswith("market group for electricity")
+                or exc.get("name", "")
+                .lower()
+                .startswith("market group for electricity")
             ) and exc.get("unit") == "megajoule":
                 exc["unit"] = "kilowatt hour"
                 rescale_exchange(exc, 1 / 3.6)

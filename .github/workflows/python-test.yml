@@ -39,11 +39,11 @@ jobs:
         py-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # general Python setup
       - name: Set up Python ${{ matrix.py-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.py-version }}
 
@@ -55,7 +55,7 @@ jobs:
       # install testing
       - name: Install package and test deps
         run: |
-          pip install .[testing] # install the package and the testing deps
+          pip install .[multifunctional,testing] # install the package and the testing deps
 
       - name: Test with pytest
         run: |

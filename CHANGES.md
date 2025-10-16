@@ -1,5 +1,62 @@
 # `bw2io` Changelog
 
+## 0.9.11 (2025-06-23)
+
+* [#316: Add ability to separate ecoSpold2 products and processes when importing](https://github.com/brightway-lca/brightway2-io/pull/316)
+
+## 0.9.10 (2025-06-23)
+
+* [#288: Remove version pin to Numpy `<2`](https://github.com/brightway-lca/brightway2-io/issues/288)
+
+## 0.9.9 (2025-04-10)
+
+* Add `use_mp` flag to `import_ecoinvent_release`
+
+## 0.9.8 (2025-03-27)
+
+* Append to existing LCIA impact categories (`methods`) during `import_ecoinvent_release` instead of overwriting
+
+## 0.9.7 (2025-03-21)
+
+* Fix project switch when restoring from older archives
+
+## 0.9.6 (2025-02-01)
+
+* Compatibility fix for project archives produced pre-`0.9.5`.
+
+## 0.9.5 (2025-01-14)
+
+* [#297: Don't rescale `minimum` and `maximum` twice.](https://github.com/brightway-lca/brightway2-io/pull/297)
+* [#295: Include project metadata on backup/restore](https://github.com/brightway-lca/brightway2-io/pull/295)
+* [#294: Fix Extraction of `CPC` & `HS2017` classifications](https://github.com/brightway-lca/brightway2-io/pull/294)
+* [#292: Fix multiline comment extraction from ecospold2](https://github.com/brightway-lca/brightway2-io/pull/292)
+* [#264: Add custom regex functionality to `split_simapro_name_geo`](https://github.com/brightway-lca/brightway2-io/pull/264)
+
+## 0.9.4 (2024-12-05)
+
+* Making name shortening in MFP name generation configurable in `SimaProBlockCSVImporter`
+
+## 0.9.3 (2024-12-05)
+
+* Add ability to use in-memory `Randonneur` datapackages, e.g. loaded from the Excel template
+
+## 0.9.2 (2024-12-02)
+
+* Remove `multifunctional` and `bw_simapro_csv` as dependencies - add install variant `bw2io[multifunctional]`
+
+## 0.9.1 (2024-12-02)
+
+* Fix product information ecospold2 extraction with invalid inputs
+
+## 0.9 (2024-11-27)
+
+* Allow separate products for SimaPro block CSV importer
+* Add more filter options to `link_iterable_by_fields`
+* Make printed importer statistics better
+* [#284 Add `ecospold2` product information from `MasterData/IntermediateExchanges.xml`](https://github.com/brightway-lca/brightway2-io/issues/284)
+* [#282 Exchange Extractor for Ecospold2 only extracts CPC classification](https://github.com/brightway-lca/brightway2-io/issues/282)
+* [#272 Clear Parameters as part of `overwrite=True`](https://github.com/brightway-lca/brightway2-io/pulls/272)
+
 ### 0.9.DEV41 (2024-10-15)
 
 * Also convert `market group for electricity` to `kWh`
