@@ -1,6 +1,6 @@
 import itertools
 from bw2io.extractors.io import IOHybridExtractor
-from bw2io.strategies.io import iob3_mapping,add_product_ids
+from bw2io.strategies.io import add_product_ids
 from bw2io.strategies.generic import normalize_units
 from bw2io.units import normalize_units as normalize_units_function
 from bw2io.importers.base_lci import LCIImporter
@@ -24,9 +24,10 @@ class IOImporter(LCIImporter):
         
         # TODO: find a more elegant solution. Perhaps inside apply_strategies
         if b3mapping is None:
-            self.biosphere_correspondence = iob3_mapping()
+            self.biosphere_correspondence = {}
         else:
             self.biosphere_correspondence=b3mapping
+        
         self.ureg = pint.UnitRegistry()
 
     def apply_strategies(self):
@@ -34,15 +35,26 @@ class IOImporter(LCIImporter):
         # only the SQL part with metadata
         self.products = normalize_units(self.products) 
 
-    def add_unlinked_flows_to_new_biosphere_database(self, biosphere_name=None):
+    def add_unlinked_flows_to_new_biosphere_database(self, biosphere_name=None)->str:
+        """if required it creates an extra biosphere database with all the flows
+        that are not matched to the 'main' biosphere.
+
+        Args:
+            biosphere_name (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            str: name of the biosphere database being generated. 
+        """
 
         biosphere_name = biosphere_name or self.db_name + " biosphere"
         db = bd.Database(biosphere_name)
 
+        # the needed elementary flows are derived from the metadata file
         needed_ef = {key for key,value in self.metadata.items() if 
                      'compartment' in value}
         
-        # codes of the extra activities neeeded
+        # codes of the extra activities neeeded. Those for which we don't 
+        # have a correspondence in the main biosphere. 
         extra_needed = needed_ef.difference(self.biosphere_correspondence)
 
 
@@ -99,7 +111,18 @@ class IOImporter(LCIImporter):
         db.write(data)
 
     def write_database(self,biosphere=None):
+        """it writes an sql database with activities as metadata. Currently it 
+        assumes there is a main biosphere to try to link to. It is either
+        defined as an argument or otherwise it is assumed it to be the one
+        defined in bd.config.biosphere.
 
+
+        Args:
+            biosphere (_type_, optional): main biosphere database
+            to lnk to. Defaults to None.
+        """
+
+        # possibly 
         new_biosphere = self.add_unlinked_flows_to_new_biosphere_database()
         
         if biosphere is None:
@@ -107,7 +130,8 @@ class IOImporter(LCIImporter):
         else:
             main_biosphere = biosphere
 
-        assert main_biosphere in bd.databases,'target biosphere db missing'
+        #assert main_biosphere in bd.databases,'target biosphere db missing'
+        
         # write the metadata
         self.write_activities_as_database()
         add_product_ids(self.products,self.db_name)
@@ -116,7 +140,7 @@ class IOImporter(LCIImporter):
         product_mapping = {"{}|{}".format(o["code"], o["location"]):o["id"]
                             for o in self.products}
         
-        # biosphere io code to biosphere 3 id
+        # biosphere io code to main biosphere id
         biosphere_mapping = {ext_code:bd.get_id((main_biosphere,b3_code)) 
                              for ext_code,b3_code in 
                              self.biosphere_correspondence.items()}
@@ -186,7 +210,8 @@ class IOImporter(LCIImporter):
         )
 
         dependents = [main_biosphere,new_biosphere]
-
+        
+        # Write IO data directly to processed arrays.
         IOTableBackend(self.db_name).write_exchanges(technosphere,biosphere,dependents)
 
         
