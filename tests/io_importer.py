@@ -135,6 +135,7 @@ def test_tidy_tables(a_and_b_matrices: tuple, metadata: dict, tmp_path):
     pet_example = IOImporter(
         tmp_path,
         DB_NAME_2,
+        #b3mapping={},
     )
 
     pet_example.apply_strategies()
