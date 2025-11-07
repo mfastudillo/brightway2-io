@@ -131,7 +131,31 @@ def test_tidy_tables(a_and_b_matrices: tuple, metadata: dict, tmp_path):
     # what if we don't provide a mapping, all the biosphere flows
     # should be in the biosphere flows.
 
+def test_db_without_mapping(a_and_b_matrices: tuple, metadata: dict, tmp_path):
+    """test that it works even if we don't provide any mapping
+    to an existing biosphere database. in such a case all the
+    elementary flows in the b matrix should be in the extra
+    biosphere matrix.
+
+    Args:
+        a_and_b_matrices (tuple): _description_
+        metadata (dict): _description_
+        tmp_path (_type_): _description_
+    """
+    DB_NAME = "pet_io_db"
     DB_NAME_2 = f"{DB_NAME}_1"
+
+    extended_hiot, extended_B = a_and_b_matrices
+
+    # this creates some tidy tables files
+    tidy_tables(extended_hiot, extended_B, tmp_path)
+
+    with open(tmp_path / "io_metadata.json", "w") as fp:
+        json.dump(metadata, fp, indent=4)
+
+    # FIXME: to be removed
+    bd.projects.set_current("test_io_importer")
+    
     pet_example = IOImporter(
         tmp_path,
         DB_NAME_2,
@@ -152,3 +176,4 @@ def test_tidy_tables(a_and_b_matrices: tuple, metadata: dict, tmp_path):
     assert (
         not connected_to_biosphere
     ), "if no mapping is provided it shouldn't be connected to biosphere"
+
